@@ -56,7 +56,18 @@ ASSESSMENT = {
     "reasoning_summary": "Latency and errors rose together.",
 }
 
-STAGE_STATUSES = {"real", "simulated", "planned"}
+STAGE_STATUSES = {"real", "simulated", "mixed", "planned"}
+
+KEY_STATUS = {"real": "real", "mixed": "mixed", "sim": "simulated", "planned": "planned"}
+
+CANONICAL_LOOP = (
+    "OBSERVE",
+    "UNDERSTAND",
+    "DECIDE",
+    "ACT / REQUEST APPROVAL",
+    "VERIFY",
+    "LEARN",
+)
 
 FORBIDDEN_IN_STATIC = (
     "nvapi-",
@@ -179,6 +190,20 @@ class Markup(HTMLParser):
 console = Markup.parse(asset("index.html"))
 
 
+def stage_chips() -> dict[str, dict]:
+    return {el["attrs"]["data-stage"]: el for el in console.with_attr("data-stage")}
+
+
+def text_of(element) -> str:
+    """Element text followed by its descendants' text, in document order."""
+    parts = [element["text"], *(child["text"] for child in console.descendants(element))]
+    return " ".join(" ".join(parts).split())
+
+
+def classes(element) -> list[str]:
+    return element["attrs"].get("class", "").split()
+
+
 def js_map_keys(name: str) -> set[str]:
     """Keys of a top-level `const NAME = { ... }` literal in app.js."""
     match = re.search(rf"\b{name}\b\s*=\s*\{{(.*?)\n\}}", asset("app.js"), re.S)
@@ -296,6 +321,41 @@ def test_loop_stages_are_each_marked():
         assert el["text"].strip(), "a stage chip must name itself"
 
 
+def test_canonical_loop_wording_is_kept_in_order():
+    assert tuple(stage_chips()) == CANONICAL_LOOP, (
+        "the loop strip must read OBSERVE → UNDERSTAND → DECIDE → ACT / REQUEST APPROVAL → VERIFY → LEARN"
+    )
+
+
+def test_act_stage_separates_the_real_gate_from_the_simulated_action():
+    chip = stage_chips()["ACT / REQUEST APPROVAL"]
+    assert chip["attrs"]["data-stage-status"] == "mixed", (
+        "the approval policy and state machine are real: labelling the whole stage simulated is wrong"
+    )
+    wording = text_of(chip)
+    assert "Approval: REAL" in wording, wording
+    assert "Action: SIMULATED" in wording, wording
+    assert "Approval: SIMULATED" not in wording
+    assert "Action: REAL" not in wording
+
+
+def test_legend_covers_every_status_the_strip_uses():
+    legend = next(
+        el for el in console.elements if el["tag"] == "p" and "legend" in classes(el)
+    )
+    keyed = {
+        KEY_STATUS[cls[1]]
+        for cls in (classes(el) for el in console.descendants(legend))
+        if cls and cls[0] == "key" and len(cls) > 1
+    }
+    used = {el["attrs"]["data-stage-status"] for el in console.with_attr("data-stage")}
+    assert keyed == used, f"legend keys {sorted(keyed)} do not match strip statuses {sorted(used)}"
+    wording = text_of(legend).lower()
+    assert "mixed" in wording
+    assert "real gate" in wording, "the legend has to say what mixed means"
+    assert "simulated action" in wording
+
+
 def test_learn_stage_is_marked_not_implemented():
     learn = next(
         (el for el in console.with_attr("data-stage") if el["attrs"]["data-stage"] == "LEARN"),
@@ -315,6 +375,30 @@ def test_real_and_simulated_disclosure_is_present():
     assert "real nvidia inference" in body
     assert "safe simulated remediation" in body
     assert "simulated" in asset("app.js").lower(), "actions must be labelled simulated in the UI"
+
+
+def test_disclosure_lists_the_real_and_simulated_halves_exactly():
+    footer = next(el for el in console.elements if el["tag"] == "footer")
+    columns = next(el for el in console.descendants(footer) if "disclosure-cols" in classes(el))
+    groups = {}
+    for column in columns["children"]:
+        heading = next(child for child in column["children"] if child["tag"] == "h3")
+        items = [
+            text_of(li).lower()
+            for child in column["children"]
+            if child["tag"] == "ul"
+            for li in child["children"]
+        ]
+        groups[text_of(heading).lower()] = items
+
+    assert set(groups) == {"real", "simulated"}, groups.keys()
+    real = " | ".join(groups["real"])
+    simulated = " | ".join(groups["simulated"])
+    for claim in ("nvidia", "policy", "approval state machine", "audit trail"):
+        assert claim in real, f"{claim} is real and must stay in the REAL list"
+    for claim in ("remediation execution", "before / after", "verification result"):
+        assert claim in simulated, f"{claim} is simulated and must stay in the SIMULATED list"
+    assert "approval" not in simulated, "the approval workflow is not simulated"
 
 
 # -- contract drift --------------------------------------------------------

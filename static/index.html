@@ -27,13 +27,20 @@
     <li><span class="chip real" data-stage="OBSERVE" data-stage-status="real">OBSERVE</span><span class="sep" aria-hidden="true">&rarr;</span></li>
     <li><span class="chip real" data-stage="UNDERSTAND" data-stage-status="real">UNDERSTAND</span><span class="sep" aria-hidden="true">&rarr;</span></li>
     <li><span class="chip real" data-stage="DECIDE" data-stage-status="real">DECIDE</span><span class="sep" aria-hidden="true">&rarr;</span></li>
-    <li><span class="chip sim" data-stage="ACT / REQUEST APPROVAL" data-stage-status="simulated">ACT / REQUEST APPROVAL</span><span class="sep" aria-hidden="true">&rarr;</span></li>
+    <li><span class="chip mixed" data-stage="ACT / REQUEST APPROVAL" data-stage-status="mixed">ACT / REQUEST APPROVAL
+      <span class="chip-split">
+        <span class="tag real">Approval: REAL</span>
+        <span class="dot" aria-hidden="true">&middot;</span>
+        <span class="tag sim">Action: SIMULATED</span>
+      </span>
+    </span><span class="sep" aria-hidden="true">&rarr;</span></li>
     <li><span class="chip sim" data-stage="VERIFY" data-stage-status="simulated">VERIFY</span><span class="sep" aria-hidden="true">&rarr;</span></li>
     <li><span class="chip planned" data-stage="LEARN" data-stage-status="planned">LEARN &middot; not implemented</span></li>
   </ul>
   <p class="legend">
     <span class="key real"></span> real &nbsp;
     <span class="key sim"></span> simulated in a lab &nbsp;
+    <span class="key mixed"></span> mixed: real gate, simulated action &nbsp;
     <span class="key planned"></span> not implemented yet
   </p>
 </section>

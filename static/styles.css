@@ -101,6 +101,10 @@ h1 { font-size: clamp(1.5rem, 3.4vw, 2.1rem); }
 .stages li { display: flex; align-items: center; gap: 0.4rem; }
 
 .chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
   font: 500 0.78rem/1 var(--mono);
   background: var(--panel-2);
   border: 1px solid var(--line);
@@ -119,6 +123,37 @@ h1 { font-size: clamp(1.5rem, 3.4vw, 2.1rem); }
   color: var(--muted);
 }
 
+/* The gate is real and the action is not, so the stage gets both status
+   colours on its left bar instead of one misleading label. */
+.chip.mixed {
+  border-left-color: transparent;
+  background:
+    linear-gradient(var(--ok) 0 50%, var(--warn) 50% 100%) left / 3px 100% no-repeat,
+    var(--panel-2);
+}
+
+.chip-split {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font: 600 0.66rem/1 var(--mono);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.chip-split .tag { padding: 0.2rem 0.32rem; border-radius: 4px; }
+.chip-split .tag.real {
+  color: #7ee787;
+  background: rgba(63, 185, 80, 0.16);
+  border: 1px solid rgba(63, 185, 80, 0.5);
+}
+.chip-split .tag.sim {
+  color: #f0d68c;
+  background: rgba(210, 153, 34, 0.14);
+  border: 1px solid rgba(210, 153, 34, 0.5);
+}
+.chip-split .dot { color: var(--muted); }
+
 .sep { color: var(--accent); }
 
 .legend {
@@ -133,6 +168,7 @@ h1 { font-size: clamp(1.5rem, 3.4vw, 2.1rem); }
 .key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: -1px; }
 .key.real { background: var(--ok); }
 .key.sim { background: var(--warn); }
+.key.mixed { background: linear-gradient(var(--ok) 0 50%, var(--warn) 50% 100%); }
 .key.planned { background: transparent; border: 1px dashed var(--muted); }
 
 /* -- run bar ------------------------------------------------------------- */

@@ -1,7 +1,7 @@
 # Operational Console
 
 `GET /` is the demo console: one page that walks a judge through
-`OBSERVE → UNDERSTAND → DECIDE → REQUEST APPROVAL → ACT (simulated) → VERIFY (simulated)`
+`OBSERVE → UNDERSTAND → DECIDE → ACT / REQUEST APPROVAL → VERIFY → LEARN`
 without curl, Postman or developer tools. It is three static files served by the same FastAPI
 process — no build step, no framework, no CDN, no second container.
 
@@ -40,9 +40,13 @@ The console deliberately has no opinions:
 
 ## Honest stage marking
 
-The loop strip marks each stage with a `data-stage-status` attribute and a colour:
-`real` for OBSERVE / UNDERSTAND / DECIDE, `simulated` for ACT and VERIFY, and `planned` for
-LEARN, whose chip reads "LEARN · not implemented" in its own text. The real/simulated split is
+The loop strip marks each stage with a `data-stage-status` attribute and a colour: `real` for
+OBSERVE / UNDERSTAND / DECIDE, `mixed` for ACT / REQUEST APPROVAL, `simulated` for VERIFY, and
+`planned` for LEARN, whose chip reads "LEARN · not implemented" in its own text. `mixed` exists
+because that stage is not one thing: the approval policy and the approval state machine are real,
+and only the remediation action is simulated. The chip therefore carries a second line,
+"Approval: REAL · Action: SIMULATED", and a two-tone left bar instead of one misleading label. The
+legend keys name all four statuses. The real/simulated split is
 restated permanently in the footer ("Real NVIDIA inference · Safe simulated remediation") with
 the two lists beneath it, so the disclosure survives scrolling past the panels.
 
