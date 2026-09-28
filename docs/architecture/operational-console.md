@@ -102,6 +102,23 @@ test suite asserts both halves: the console response has exactly these directive
 Because `script-src 'self'` forbids inline script, the page has no `onclick` attributes, no
 `<script>` bodies and no `style="…"` attributes; listeners are attached in `start()`.
 
+## Opening an ingested incident
+
+A producer that posts to `POST /api/v1/events/ingest` gets back a relative
+`/?incident=<id>` pointer, and the page treats that pointer as client-side routing rather than a
+second flow: `start()` reads the query parameter, and when it matches `^inc_[0-9a-f]{32}$` — the
+shape Sentinel itself issues — the page fetches `GET /api/v1/incidents/{id}` and renders it into
+the panels that already exist. The form fields are then filled from `workflow.event`, so the page
+is the evidence of what the producer reported rather than something the operator must retype.
+The audit label for the first machine event reads "Operational event ingested".
+
+No new element, route or panel was added for it. The parameter is untrusted text, so a value that
+is not an incident id is ignored and the console boots empty; the fetch path has one call site
+and no way to be steered off-origin, which is what "the query parameter cannot cause an external
+fetch" means in practice. `Clear / New Incident` drops the parameter with `history.replaceState`,
+so a reloaded page does not reopen the incident the operator just dismissed. The full contract is
+in [machine-event-ingestion.md](machine-event-ingestion.md).
+
 ## Drift guards
 
 `tests/test_console.py` pins the console to the backend so a change on one side fails loudly on

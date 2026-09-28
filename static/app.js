@@ -16,6 +16,7 @@ const ACTION_LABELS = {
 };
 
 const AUDIT_LABELS = {
+  "event_ingested": "Operational event ingested",
   "incident_analyzed": "Incident analyzed",
   "approval_requested": "Human approval requested",
   "approval_granted": "Operator approved",
@@ -37,6 +38,10 @@ const APPROVAL_NOTE = "Approved from Sentinel console.";
 const REJECTION_NOTE = "Rejected from Sentinel console.";
 const EXECUTION_NOTE = "Executed from Sentinel hackathon console.";
 const ATTEMPT_NOTE = "Execution attempted from Sentinel console.";
+
+// ?incident=<id> is client-side routing, so the id is treated as untrusted text:
+// only a shape Sentinel itself issues is ever interpolated into a request path.
+const INCIDENT_ID_PATTERN = /^inc_[0-9a-f]{32}$/;
 
 // Product language for the codes the backend can return, so a refusal reads as
 // policy rather than as a crash. Messages come from our own API, never from the
@@ -323,6 +328,9 @@ async function runAction(note) {
 }
 
 function resetDemo() {
+  // A closed console must not leave a pointer behind: reloading the page would
+  // otherwise reopen the incident the operator just dismissed.
+  history.replaceState(null, "", location.pathname);
   el.source.value = "novaops";
   el.title.value = "API latency spike";
   el.description.value = "p95 latency increased from 180ms to 2.4s";
@@ -526,7 +534,24 @@ async function pollHealth() {
   renderHealth();
 }
 
-function start() {
+function incidentIdFromQuery() {
+  const supplied = new URLSearchParams(location.search).get("incident");
+  if (!supplied || !INCIDENT_ID_PATTERN.test(supplied)) return null;
+  return supplied;
+}
+
+function showIngestedEvent(workflow) {
+  // The producer reported these words; the form becomes the evidence of what
+  // Sentinel was told, so the operator reads the incident instead of retyping it.
+  const event = workflow.event;
+  el.source.value = event.source;
+  el.title.value = event.title;
+  el.description.value = event.description;
+  el.severityHint.value = event.severity_hint;
+  el.evidence.value = event.evidence.join("\n");
+}
+
+async function start() {
   el.runButton.addEventListener("click", runDemoIncident);
   el.clearButton.addEventListener("click", resetDemo);
   el.approveButton.addEventListener("click", () => decide("approve"));
@@ -535,6 +560,18 @@ function start() {
   el.executeButton.addEventListener("click", () => runAction(EXECUTION_NOTE));
   pollHealth();
   setInterval(pollHealth, 15000);
+  render();
+  // A producer-supplied link opens the same incident the buttons already drive.
+  const requested = incidentIdFromQuery();
+  if (!requested) return;
+  startRun("Loading the incident Sentinel ingested");
+  const response = await refresh(requested);
+  endRun();
+  if (!response.ok) {
+    report(response.notice, response.message);
+    return;
+  }
+  showIngestedEvent(state.workflow);
   render();
 }
 

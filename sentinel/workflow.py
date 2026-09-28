@@ -18,6 +18,7 @@ from .schemas import (
     IncidentAnalysis,
     IncidentEvent,
     IncidentWorkflow,
+    IngestEvidence,
     WorkflowState,
 )
 
@@ -105,9 +106,20 @@ class WorkflowStore:
         with self._lock:
             return self._copy(self._require(incident_id))
 
+    def holds(self, incident_id: str) -> bool:
+        """Whether the record is still here; eviction can outlive a pointer to it."""
+        with self._lock:
+            return incident_id in self._records
+
     # -- writes --------------------------------------------------------------
 
-    def record_analysis(self, event: IncidentEvent, analysis: IncidentAnalysis) -> IncidentWorkflow:
+    def record_analysis(
+        self,
+        event: IncidentEvent,
+        analysis: IncidentAnalysis,
+        *,
+        ingest: IngestEvidence | None = None,
+    ) -> IncidentWorkflow:
         assessment = analysis.assessment
         state: WorkflowState = "awaiting_approval" if assessment.requires_approval else "analyzed"
         with self._lock:
@@ -119,6 +131,10 @@ class WorkflowStore:
                 event=event,
                 analysis=analysis,
             )
+            if ingest is not None:
+                # A machine-ingested incident opens with the producer's own evidence
+                # of arrival; the manual path has none to report.
+                self._audit(record, "event_ingested", "sentinel", ingest.model_dump())
             self._audit(
                 record,
                 "incident_analyzed",

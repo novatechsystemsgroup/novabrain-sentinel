@@ -142,9 +142,9 @@ the run's input was authored to match, not because anything was measured. No met
   'scale_api_replicas' or 'restart_api_service'". The pydantic enum rejected it before the
   store was opened, so no state changed and no audit event was written.
 - `GET /api/v1/incidents/inc_does_not_exist` → `404 incident_not_found`, naming the id only.
-- Leak scan across every response body the service produced: `reasoning_content` absent,
-  `nvapi-` absent, and the provider base URL absent. The trail carries the model *name*, which
-  is safe to show, and never the provider's raw payload.
+- Leak scan across every response body the service produced: the NVIDIA key prefix absent,
+  `reasoning_content` absent, and the provider base URL absent. The trail carries the model *name*,
+  which is safe to show, and never the provider's raw payload.
 - `GET /` and `GET /health` re-checked against the same image; the TASK-011 analysis response
   is byte-compatible with its documented shape.
 
@@ -206,7 +206,7 @@ same shape without the premature attempt.
   prefilled demo incident's evidence text, on the input side of the loop.
 - `severity_hint=unknown` was again raised to `high` by the model, so the prefilled hint is not
   steering the result.
-- Scan of `document.documentElement.outerHTML` after a full run: `nvapi-`,
+- Scan of `document.documentElement.outerHTML` after a full run: the NVIDIA key prefix,
   `integrate.api.nvidia.com`, `reasoning_content`, `api_key`, `NVIDIA_API_KEY` and `Bearer ` all
   occur **0** times.
 - The page loads exactly one script and one stylesheet, both same-origin under `/static/`, with
@@ -225,6 +225,118 @@ One error across the whole session, and it is Chrome's own network log:
 deliberate pre-approval execution in step 3. Zero JavaScript errors, zero warnings. Any non-2xx
 fetch produces that line, so it cannot be removed without hiding the safety behaviour the demo
 exists to show.
+
+## Machine ingestion verification — TASK-014 (2026-09-28)
+
+> **Real NVIDIA inference + safe simulated remediation — not real remediation.**
+> The event arrived over `POST /api/v1/events/ingest` from a machine-shaped client, the
+> assessment came from `nvidia/nemotron-3.5-lightning-30b-a3b` over the live provider, and the
+> approval gate was crossed by a human in the browser. Only `execute` onward is simulated: no
+> service restarted, no replica was created, no metric was read.
+
+| | |
+|---|---|
+| Artifact | `docker build` of the working tree (`sha256:cff97d15…`), run as `sentinel-task014` on `127.0.0.1:8024`, non-root UID 10001, one worker |
+| Provider | NVIDIA Build, live. `NVIDIA_API_KEY` injected with `docker run -e NAME` at run time only |
+| Ingest secret | `SENTINEL_INGEST_TOKEN` — 64 hex chars generated into a `0600` file outside the repo, passed with `--env-file`, never a CLI argument, never printed, never committed |
+| Model | `nvidia/nemotron-3.5-lightning-30b-a3b` |
+| Viewports | 1440 × 900 and 390 × 844 |
+
+### The ingest loop, timed against the live provider
+
+| Case | Request | Result |
+|---|---|---|
+| first touch | `POST /api/v1/events/ingest` `event_id=novaops-e2e-0001` | **`201`** in **11.65 s** → `inc_35ecc84dc5234720b7a8917035e7c7f7`, `workflow_state: awaiting_approval`, `duplicate: false`, relative `console_path`, `Location` header on the same path |
+| replay | the same bytes, same `event_id` | **`200`** in **13.3 ms** → identical `incident_id`, `duplicate: true`, the same five keys |
+| producer race | two concurrent posts, `event_id=novaops-race-0001` | winner **`201`** in **15.85 s**; loser **`409 event_in_progress`** in **64 ms**, while the winner was still inside inference |
+| replay after the winner | same `event_id` again | **`200`** in **18.5 ms**, same `incident_id`, `duplicate: true` |
+| through the emitter | `scripts/send_demo_event.py --event-id novaops-emitter-0001` | **`HTTP 201`** in **21.0 s** → `inc_1f364ed674cd487fba3377c07d0ef921`, then `HTTP 200 / duplicate: True` for the same id in **0.31 s** (process start, not provider) |
+| no token | `POST …/ingest` with `{}` body, no header | **`401`** |
+| wrong token | `POST …/ingest` with `{}` body, `Bearer` a wrong value | **`401`** + `www-authenticate: Bearer` — **not** `422`, so the secret was checked before the body was parsed |
+| unauthenticated analyse (unchanged) | `POST /api/v1/incidents/analyze` | `200` in **5.60 s**, keys `incident_id` / `status` / `assessment` / `model` |
+
+One inference per `event_id`, and the two replays cost 13–18 ms: the replay guard answers from
+memory and never reaches the provider. The loser of the race got a `409` rather than a second
+incident, so the concurrency case is a refusal, not a silent double-charge.
+
+### The model decided severity, not the producer
+
+Three machine events, three different hints, one assessment band — the alias map is a
+normalisation, never an escalation:
+
+| `severity_hint` sent | stored hint | model `severity` | `confidence` | `requires_approval` |
+|---|---|---|---|---|
+| `warning` | `medium` | `high` | 0.87 | `true` |
+| *(emitter default)* `warning` | `medium` | `high` | 0.87 | `true` |
+| `critical` | `critical` | `high` | 0.87 | `true` |
+
+`warning → medium` and `critical → critical` applied as documented; `APPROVAL_FLOOR` then set
+`requires_approval` for a `high` incident regardless of what the model opined.
+
+### The audit trail as it came back
+
+Append order is authoritative, so note that `event_ingested` is stamped `22:11:45` while its own
+`details.observed_at` reads `14:12:03` — the authored observation time is carried as data and is
+never used to reorder the trail:
+
+```
+2026-09-28T22:11:45.539401+00:00  event_ingested         sentinel  {"event_id":"novaops-e2e-0001","source":"novaops","event_type":"high_cpu","observed_at":"2026-09-28T14:12:03+00:00","received_at":"2026-09-28T22:11:33.917883+00:00"}
+2026-09-28T22:11:45.539552+00:00  incident_analyzed      sentinel  {"severity":"high","confidence":0.87,"requires_approval":true,"model":"nvidia/nemotron-3.5-lightning-30b-a3b"}
+2026-09-28T22:11:45.539564+00:00  approval_requested     sentinel  {"severity":"high","reason":"Sentinel approval policy requires an operator decision."}
+2026-09-28T22:12:32.610670+00:00  execution_blocked      operator  {"action":"scale_api_replicas","reason":"approval_required"}
+2026-09-28T22:12:42.835470+00:00  approval_granted       operator  {"note":"Approved from Sentinel console."}
+2026-09-28T22:12:51.534092+00:00  execution_requested    operator  {"action":"scale_api_replicas","mode":"simulated","note":"Executed from Sentinel hackathon console."}
+2026-09-28T22:12:51.534568+00:00  execution_finished     sentinel  {"action":"scale_api_replicas","state":"verified"}
+2026-09-28T22:12:51.534593+00:00  verification_recorded  sentinel  {"status":"verified","success":true,"simulated":true}
+```
+
+The machine opened the record; the operator wrote every human intent, including the premature
+execution attempt. Three gaps in wall-clock terms — 47 s to read the assessment, 10 s to approve,
+9 s to request execution — are the human, and the workflow itself took 0.5 ms after the model
+answered.
+
+### Console walk via `/?incident=<id>`
+
+| Step | What the operator does | What the page showed |
+|---|---|---|
+| 1 | paste the `console_path` from the `201` | header `Incident inc_35ecc84d…`, `Workflow awaiting_approval`, all six panels populated from one same-origin `GET` — no re-analysis, no second incident |
+| 2 | read the trail | first entry labelled **"Operational event ingested"**, with `event_id · source · event_type · observed_at · received_at` beneath it |
+| 3 | *Attempt Execution* before approving | **`409`** rendered as "Execution blocked by Sentinel policy — Approval is required before this action can run.", plus the `execution_blocked` row above |
+| 4 | *Approve* | "Operator approved — Approved. The gate is open for a simulated action.", `approval_granted` in the trail |
+| 5 | *Execute simulated action* | state `verified`, `RESULT VERIFIED`, `SIMULATION YES · simulated`, before/after `2 → 4`, `2400 → 610`, `8.2 → 0.4`, `0 → 0` |
+| 6 | *Clear / New Incident* | `location.search` empty, still `/`, incident header gone, and no navigation occurred (`history.replaceState`) |
+
+The emitter's second incident (`inc_1f364ed6…`) was opened the same way at 1440 × 900 and 390 × 844
+and produced the identical panel set, so the bridge is not tied to one record.
+
+### Claims checked against the rendered DOM and the network log
+
+- Subresource list for the whole session: `/static/styles.css`, `/static/app.js`, `/health`, and
+  `/api/v1/incidents/...` only — **zero** off-origin requests, and none of them carry an
+  `Authorization` header.
+- `document.documentElement.outerHTML` after the full walk: `Bearer`, `SENTINEL_INGEST_TOKEN`,
+  the NVIDIA key prefix and any 64-hex token-shaped string occur **0** times. The ingest secret
+  never reaches the browser.
+- `/?incident=../../etc/passwd` → the id fails `INCIDENT_ID_PATTERN`, so **no API request is
+  issued at all** and the page shows "Incident not found — This incident is not a known workflow
+  record or it has left memory after a restart." The query parameter cannot address anything
+  other than a same-origin incident.
+- Horizontal overflow at 390 px: **0 px**. Panels still stack in loop order, and the ACT chip
+  still reads `Approval: REAL · Action: SIMULATED` — TASK-013A's attribution survived the new
+  entry point.
+- The before/after figures on screen are the backend `verification` object verbatim; the run
+  returned `{"status":"verified","simulated":true,"success":true}` with the catalog constants.
+- No `reasoning_content` and no chain-of-thought text appeared in any response body or in the DOM.
+- Browser console: one line, Chrome's own `Failed to load resource: 409 (Conflict)` for the
+  deliberate step-3 refusal. Zero JavaScript errors, zero warnings.
+
+### What this tells us
+
+11.65–21.0 s for a machine-triggered analysis is the same band TASK-011 and TASK-013 measured for
+the manual route, which is expected: ingestion adds a dictionary reservation and an audit append,
+not a second model call. The endpoint is honest about being synchronous — a producer must budget
+at least the 90 s read timeout, and the two-replica limit still applies because both the workflow
+store and the idempotency ledger are per-process memory that a restart empties.
 
 ## Not yet measured
 

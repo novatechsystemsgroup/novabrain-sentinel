@@ -22,13 +22,14 @@ OBSERVE → UNDERSTAND → DECIDE → ACT / REQUEST APPROVAL → VERIFY → LEAR
 **Early implementation / Hackathon build** — Active development for the NVIDIA competition.
 
 The repository currently contains a **deployable vertical slice**: a single FastAPI container
-that serves an **operational demo console** at `/`, a health endpoint, **real NVIDIA model
-incident analysis**, and an **approval-gated workflow** with an audit trail. A judge can open one
-URL and walk the whole loop without curl, Postman or developer tools — see
+that serves an **operational demo console** at `/`, a health endpoint, **bearer-token machine
+event ingestion**, **real NVIDIA model incident analysis**, and an **approval-gated workflow**
+with an audit trail. A judge can open one URL and walk the whole loop without curl, Postman or
+developer tools — see
 [`docs/architecture/operational-console.md`](docs/architecture/operational-console.md).
 
 ```
-Operational event → OBSERVE → NVIDIA model analysis → UNDERSTAND → DECIDE
+producer event (or console form) → OBSERVE → NVIDIA model analysis → UNDERSTAND → DECIDE
        → awaiting approval → operator APPROVE / REJECT → ACT (simulated) → VERIFY (simulated)
 ```
 
@@ -36,7 +37,7 @@ What is real and what is not:
 
 | Stage | Status |
 |---|---|
-| `OBSERVE` / `UNDERSTAND` | **Real** — a live NVIDIA Build call produces and validates the assessment |
+| `OBSERVE` / `UNDERSTAND` | **Real** — a producer's event is ingested over HTTP and a live NVIDIA Build call produces and validates the assessment |
 | `DECIDE` | **Real** — Sentinel's approval policy parks high/critical incidents behind an operator gate |
 | `ACT / REQUEST APPROVAL` | Gate is real; the action is **simulated**. Nothing is restarted or scaled |
 | `VERIFY` | **Simulated** — deterministic before/after metric snapshots |
@@ -53,24 +54,29 @@ One process, one container, no external services:
 sentinel/api.py       FastAPI app — GET /health, GET /, and the analyze / workflow routes
 sentinel/analysis.py  OBSERVE → UNDERSTAND → DECIDE, plus the Sentinel approval policy
 sentinel/nvidia.py    NVIDIA Build client: forced tool call, timeouts, provider error taxonomy
+sentinel/ingestion.py bearer-token guard + in-process idempotency ledger for machine events
 sentinel/workflow.py  state machine, approval gate, audit trail, in-memory store
 sentinel/simulation.py  simulated action catalog — the only code that "does" anything
 sentinel/schemas.py   contracts for the event, the assessment, the workflow state and audit events
 static/index.html     The operational demo console — plain HTML, no build step
 static/styles.css     Console styling on the existing design tokens
 static/app.js         Console behaviour: same-origin fetch + render, no framework, no CDN
+scripts/send_demo_event.py  demo event emitter (stdlib only) — a NovaOps-compatible producer
 Dockerfile            python:3.13-slim, non-root UID 10001, HEALTHCHECK on /health
 requirements.txt      Fully pinned runtime dependencies
 ```
 
-There is no database, cache, queue, or auth layer in this slice by design; the only outbound
-dependency is the NVIDIA Build API. `analysis.py` and `nvidia.py` know nothing about the
-workflow, so the model-facing path is unchanged by everything downstream of it.
+There is no database, cache, queue or session layer in this slice by design, and one shared
+bearer secret guards one route; the only outbound dependency is the NVIDIA Build API.
+`analysis.py` and `nvidia.py` know nothing about the workflow or about ingestion, so the
+model-facing path is unchanged by everything downstream of it.
 
 See [`docs/architecture/incident-analysis.md`](docs/architecture/incident-analysis.md) for the
-analysis path, failure modes and privacy boundary, and
+analysis path, failure modes and privacy boundary,
 [`docs/architecture/approval-workflow.md`](docs/architecture/approval-workflow.md) for the
-state machine, the execution invariant and the audit trail.
+state machine, the execution invariant and the audit trail, and
+[`docs/architecture/machine-event-ingestion.md`](docs/architecture/machine-event-ingestion.md)
+for how a producer's event enters that workflow.
 
 ## Local development
 
@@ -81,8 +87,9 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
 
-export NVIDIA_API_KEY=nvapi-...            # never commit this
+export NVIDIA_API_KEY='paste your NVIDIA Build key here'   # never commit it
 export NVIDIA_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b
+export SENTINEL_INGEST_TOKEN=$(openssl rand -hex 32)        # only POST /api/v1/events/ingest needs it
 uvicorn sentinel.api:app --reload
 ```
 
@@ -102,15 +109,20 @@ docker build -t novabrain-sentinel .
 docker run --rm -p 8000:8000 \
   -e NVIDIA_API_KEY="$NVIDIA_API_KEY" \
   -e NVIDIA_MODEL="nvidia/nemotron-3.5-lightning-30b-a3b" \
+  -e SENTINEL_INGEST_TOKEN="$SENTINEL_INGEST_TOKEN" \
   novabrain-sentinel
 curl -s http://127.0.0.1:8000/health
 ```
 
+Passing `-e VAR` forwards the value from your shell into the container without it ever
+appearing in the image, a commit or a log line. Omit the ingest line to leave machine
+ingestion switched off.
+
 ## Configuration
 
 Copy `.env.example` to `.env` to override defaults. `SENTINEL_*` variables all have working
-defaults; the NVIDIA variables are read per request and are required only by the analysis
-endpoint.
+defaults; the NVIDIA variables are read per request and are required by the analysis and
+ingestion endpoints, while `SENTINEL_INGEST_TOKEN` is required only by the ingestion one.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -121,13 +133,21 @@ endpoint.
 | `NVIDIA_API_KEY` | *(none)* | Bearer token for NVIDIA Build. **Required** for analysis; never committed |
 | `NVIDIA_BASE_URL` | `https://integrate.api.nvidia.com/v1` | OpenAI-compatible endpoint |
 | `NVIDIA_MODEL` | *(none)* | Model id, used exactly as configured — no implicit fallback |
+| `SENTINEL_INGEST_TOKEN` | *(none)* | Shared bearer secret presented by a machine producer. **Required** only by `POST /api/v1/events/ingest`; never committed, logged or echoed |
 
 Without `NVIDIA_API_KEY` / `NVIDIA_MODEL`, `POST /api/v1/incidents/analyze` returns `503
-provider_not_configured` while `GET /` and `GET /health` keep working.
+provider_not_configured` while `GET /` and `GET /health` keep working. Without
+`SENTINEL_INGEST_TOKEN`, `POST /api/v1/events/ingest` returns `503 ingest_not_configured` — the
+route is switched off rather than left open, and every other endpoint is unaffected.
 
 The approval workflow adds **no configuration**: no new variables, no dependencies, no backing
 service. Its one limit is a compile-time constant (`MAX_TRACKED_INCIDENTS = 200`) documented in
 [`docs/architecture/approval-workflow.md`](docs/architecture/approval-workflow.md).
+
+Machine ingestion adds **one secret** and no dependency, no store and no backing service. Its
+replay guard is per-process memory, so a restart clears it: an event replayed after a redeploy is
+treated as new. That limit, and the `MAX_TRACKED_EVENTS = 200` ceiling beside it, are documented in
+[`docs/architecture/machine-event-ingestion.md`](docs/architecture/machine-event-ingestion.md).
 
 ## API
 
@@ -136,6 +156,7 @@ service. Its one limit is a compile-time constant (`MAX_TRACKED_INCIDENTS = 200`
 | `GET` | `/health` | `200` → `{"status":"ok","service":"novabrain-sentinel"}` |
 | `GET` | `/` | `200` → the operational demo console (HTML, strict CSP on this response only) |
 | `POST` | `/api/v1/incidents/analyze` | `200` → structured assessment; `422` invalid event; `502`/`503`/`504` provider failure |
+| `POST` | `/api/v1/events/ingest` | `201` first receipt / `200` duplicate replay → incident pointer; `401` invalid ingest token; `409` event in progress; `422` invalid event; `502`/`503`/`504` provider or capacity failure |
 | `GET` | `/api/v1/incidents/{incident_id}` | `200` → full workflow record; `404` unknown incident |
 | `POST` | `/api/v1/incidents/{incident_id}/approve` | `200` → updated record; `409` not awaiting approval |
 | `POST` | `/api/v1/incidents/{incident_id}/reject` | `200` → updated record; `409` not awaiting approval |
@@ -237,6 +258,83 @@ exactly two entries, `scale_api_replicas` and `restart_api_service`. Anything el
 before the store sees it. `restart_api_service` on a `critical` incident deterministically
 yields `failed`, which is how both terminal outcomes stay demonstrable without randomness.
 
+## Machine event ingestion
+
+`POST /api/v1/events/ingest` is the machine door: another process reports an event, Sentinel
+normalises it into the same `IncidentEvent` the console builds, and the existing
+analysis → approval → execute → audit workflow takes it from there. **The operator no longer
+creates the incident manually** — they review the one a producer opened.
+
+```bash
+export SENTINEL_INGEST_TOKEN=$(openssl rand -hex 32)   # must match the server's value
+
+curl -s -X POST http://127.0.0.1:8000/api/v1/events/ingest \
+  -H "Authorization: Bearer $SENTINEL_INGEST_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --max-time 120 \
+  -d '{
+        "event_id": "novaops-evt-2026-09-28-0007",
+        "source": "novaops",
+        "event_type": "ram_high",
+        "title": "Memory pressure on api-01",
+        "description": "Host agent reports sustained memory pressure",
+        "severity_hint": "warning",
+        "evidence": ["error rate increased to 8.2%", "CPU increased to 91%"],
+        "observed_at": "2026-09-28T08:15:00+00:00"
+      }'
+```
+
+```json
+{
+  "event_id": "novaops-evt-2026-09-28-0007",
+  "incident_id": "inc_0b86102788ac4420bbeae77574c1a1d2",
+  "workflow_state": "awaiting_approval",
+  "duplicate": false,
+  "console_path": "/?incident=inc_0b86102788ac4420bbeae77574c1a1d2"
+}
+```
+
+`201` on the first receipt, `200` with `"duplicate": true` when the same `event_id` is replayed —
+the replay returns the incident it already made and **does not call the model again**.
+`console_path` is relative on purpose (Sentinel does not know its public hostname), and opening
+it loads that incident into the same console panels: the query parameter can only ever trigger a
+same-origin fetch of an incident, never a request elsewhere.
+
+Three properties worth stating precisely:
+
+- **Auth.** Machine-to-machine ingestion is bearer-token protected. The public hackathon console
+  remains intentionally unauthenticated, and so is `POST /api/v1/incidents/analyze`; the guard is
+  one route wide, not an application-wide one. An unset token answers `503 ingest_not_configured`
+  rather than leaving the route open.
+- **Idempotency.** The ledger is in-process memory, so **a restart clears it** and an event
+  replayed after a redeploy becomes a new incident. A duplicate arriving while its analysis is
+  still running answers `409 event_in_progress`; a full ledger refuses with
+  `503 ingest_ledger_full` instead of evicting an event being analysed.
+- **Synchronous.** The request is held for the whole inference (**13–48 s** measured, `90 s`
+  provider read timeout), so the caller's timeout must exceed the backend's. There is no queue,
+  worker or callback: this is an idempotency-guarded door for a low event rate, not a
+  high-throughput webhook receiver.
+
+`scripts/send_demo_event.py` is the demo producer — a **NovaOps-compatible producer**, not a
+NovaOps integration (see the architecture doc for what NovaOps actually emits today). It reads
+the token from the environment only, never takes it as an argument, never prints it, and posts one
+`ram_high` event:
+
+```bash
+.venv/bin/python scripts/send_demo_event.py --url http://127.0.0.1:8000 --event-id novaops-demo-0001
+# HTTP 201
+# event_id: novaops-demo-0001
+# incident_id: inc_…
+# workflow_state: awaiting_approval
+# duplicate: False
+# console_path: /?incident=inc_…
+```
+
+Full contract, normalisation rules, failure taxonomy and the audit ordering are in
+[`docs/architecture/machine-event-ingestion.md`](docs/architecture/machine-event-ingestion.md),
+with the trade-offs in
+[`docs/decisions/0003-machine-event-ingestion.md`](docs/decisions/0003-machine-event-ingestion.md).
+
 ## Deployment
 
 Deployed as a Dockerfile-built application on Coolify. Because workflow state is per-process,
@@ -275,6 +373,18 @@ provider latency.
 ## Demo
 
 **<https://sentinel.novatechsystem.co.uk>** — the operational console, no login.
+
+Two ways in, and the second is the one that makes the loop honest:
+
+1. **Machine-first (the story being told).** A producer posts an event
+   (`scripts/send_demo_event.py` with `SENTINEL_INGEST_TOKEN` in its environment), Sentinel
+   ingests it, analyses it with a live NVIDIA call, files the incident in the same workflow store
+   the console reads (so a `high` or `critical` assessment opens in `awaiting_approval`), and
+   returns a `/?incident=…` link. The operator clicks that link and finds the incident already
+   there — **the operator no longer creates the incident manually.** Re-running the emitter with
+   the same `event_id` answers `200 duplicate: true` and hands back the same incident without
+   paying for a second inference.
+2. **Console-driven.** The same four clicks below, with the incident typed into the page.
 
 Four clicks, no page reload, no developer tools:
 
@@ -322,16 +432,26 @@ resolved in the world.
 - **Least privilege** — Minimal permissions for each component
 - **Console surface** — the page is locked to its own assets by a CSP on `GET /` alone
   (`script-src 'self'`, no inline script, no CDN, no `frame-ancestors`), calls only same-origin
-  routes, and never sees the NVIDIA key, the provider base URL or any reasoning trace
-- **Secrets management** — No credentials in source code; environment-based configuration
+  routes, and never sees the NVIDIA key, the ingest token, the provider base URL or any reasoning
+  trace
+- **Ingestion guard** — `POST /api/v1/events/ingest` requires a shared bearer secret compared
+  with `hmac.compare_digest`, checked before the request body is parsed, and answered with
+  `www-authenticate: Bearer` on failure. The token is never logged, echoed, stored, or shipped in
+  an example
+- **Secrets management** — No credentials in source code; environment-based configuration. Two
+  secrets exist (`NVIDIA_API_KEY`, `SENTINEL_INGEST_TOKEN`), both runtime-only, and neither has a
+  value in this repository or its docs
 - **Input validation** — All external inputs are validated and sanitized
 - **Defense in depth** — Multiple layers of security controls
 
-Known gaps, stated rather than implied: the workflow has **no authentication** (any client that
-can reach the port can approve its own incident — the console makes that one click away, and
-every actor is still recorded as `operator` regardless of who pressed it), and its state is
-**in-memory only**, so an audit trail does not survive a restart. Closing both is follow-on work,
-not part of this slice.
+Known gaps, stated rather than implied: Machine-to-machine ingestion is bearer-token protected.
+The public hackathon console remains intentionally unauthenticated — as does
+`POST /api/v1/incidents/analyze`, so any client that can reach the port can still pay for an
+inference and approve its own incident (every actor is recorded as `operator` regardless of who
+pressed it). One shared secret, with no rotation or per-producer identity, is a demo-grade
+control: guard the rest at the platform layer. Workflow state is **in-memory only**, so an audit
+trail does not survive a restart and neither does ingestion idempotency. Closing these is
+follow-on work, not part of this slice.
 
 ## Repository Relationship
 

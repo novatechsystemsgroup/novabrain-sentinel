@@ -220,6 +220,8 @@ def js_routes() -> set[str]:
 def backend_audit_events() -> set[str]:
     """Audit event names the backend actually emits, gathered by running it."""
 
+    from sentinel.schemas import IngestEvidence  # local: only the ingest drive needs it
+
     def analyse(incident_id: str) -> IncidentAnalysis:
         return IncidentAnalysis(
             incident_id=incident_id,
@@ -245,6 +247,20 @@ def backend_audit_events() -> set[str]:
 
     collect(store.record_analysis(event, analyse("inc-rejected")))
     collect(store.decide("inc-rejected", "rejected", "no"))
+
+    collect(
+        store.record_analysis(
+            event,
+            analyse("inc-machine"),
+            ingest=IngestEvidence(
+                event_id="novaops-evt-console",
+                source="novaops",
+                event_type="ram_high",
+                observed_at="2026-09-28T08:15:00+00:00",
+                received_at="2026-09-28T08:15:02+00:00",
+            ),
+        )
+    )
     return seen
 
 
@@ -518,6 +534,84 @@ def test_panels_stack_in_numbered_order_on_a_narrow_screen():
     assert set(ordered) == set(re.findall(r'class="panel" id="(panel-[a-z]+)"', asset("index.html"))), (
         "every panel needs a mobile order"
     )
+
+
+# -- the /?incident=<id> bridge -------------------------------------------
+
+
+def js_function(name: str) -> str:
+    """Body of a top-level `function name(...)` in app.js."""
+    marker = f"function {name}("
+    assert marker in asset("app.js"), f"{marker} is missing from static/app.js"
+    return asset("app.js").split(marker, 1)[1].split("\n}", 1)[0]
+
+
+def test_ingestion_is_readable_in_product_language():
+    labels = re.search(r"\bAUDIT_LABELS\b\s*=\s*\{(.*?)\n\}", asset("app.js"), re.S)
+    assert labels, "AUDIT_LABELS is missing"
+    assert re.search(r'["\']event_ingested["\']\s*:\s*"Operational event ingested"', labels.group(1)), (
+        "the machine-ingested entry must read as an observation, not as an error"
+    )
+
+
+def test_the_query_parameter_is_read_once_and_validated_before_use():
+    source = asset("app.js")
+    assert re.search(r"URLSearchParams\(location\.search\)", source), (
+        "the console has to pick the incident up from ?incident="
+    )
+    assert source.count("location.search") == 1, (
+        "one guarded reader only: a second unvalidated read is the bug this pins out"
+    )
+    assert re.search(r"/\^inc_\[0-9a-f\]\{32\}\$\/", source), (
+        "an id that fails the shape check must never be sent anywhere"
+    )
+    reader = js_function("incidentIdFromQuery")
+    assert ".test(" in reader and "return" in reader
+
+
+def test_a_loaded_incident_reuses_the_existing_panels_and_refetch_helper():
+    reader = js_function("incidentIdFromQuery")
+    start = js_function("start")
+    assert "refresh(" in start, (
+        "the bridge must run the same GET /api/v1/incidents/{id} the buttons already use"
+    )
+    shown = js_function("showIngestedEvent")
+    for field in ("el.source.value", "el.title.value", "el.description.value", "el.evidence.value"):
+        assert field in shown, f"{field} must carry what the producer reported"
+    assert "severity_hint" in shown
+
+
+def test_clearing_the_console_removes_the_incident_query():
+    reset = js_function("resetDemo")
+    assert "history.replaceState" in reset, (
+        "Clear must not leave a stale ?incident= that reloads the closed incident"
+    )
+    assert "location.pathname" in reset
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["?incident=inc_" + "0" * 32, "?incident=../../etc/passwd", "?incident=" + "x" * 4000],
+    ids=["well-formed", "traversal", "oversized"],
+)
+def test_the_query_parameter_changes_nothing_the_server_serves(query):
+    """?incident= is client-side routing: the document, its CSP and its status are
+    identical whatever the operator puts in it, so no fetch target can be smuggled
+    in through the URL."""
+    response = request("GET", f"/{query}")
+    assert response.status_code == 200
+    assert response.text == request("GET", "/").text
+    assert response.headers["content-security-policy"] == request("GET", "/").headers[
+        "content-security-policy"
+    ]
+
+
+def test_every_console_request_still_flows_through_one_relative_helper():
+    source = asset("app.js")
+    assert source.count("fetch(") == 1, (
+        "a second fetch call site would bypass the same-origin guard on the bridge"
+    )
+    assert not re.search(r"""["']//[^"'\s]""", source), "protocol-relative URLs are not same-origin"
 
 
 @pytest.mark.parametrize("path", ["/", "/static/index.html"])

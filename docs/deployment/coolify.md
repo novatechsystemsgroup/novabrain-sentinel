@@ -1,11 +1,12 @@
 # Deploying NovaBrain Sentinel with Coolify
 
-This slice ships as **one container**. No database, queue, or backing service is required.
+This slice ships as **one container**. No database, queue, cache or backing service is required.
 The only outbound dependency is the NVIDIA Build inference API, used by
-`POST /api/v1/incidents/analyze`.
+`POST /api/v1/incidents/analyze` and by `POST /api/v1/events/ingest`.
 
-Incident workflow state (approval gate, audit trail, verification results) is held **in the
-process memory** — see [Run as exactly one replica](#run-as-exactly-one-replica).
+Incident workflow state (approval gate, audit trail, verification results) and the ingestion
+idempotency ledger are held **in the process memory** — see
+[Run as exactly one replica](#run-as-exactly-one-replica).
 
 ## Resource summary
 
@@ -46,6 +47,9 @@ Two replicas break the approval workflow in a way that looks like a bug:
   routed to replica B answers `404 incident_not_found`.
 - An incident an operator approved on A can be *re-*analysed by B, which is a fresh store with
   a fresh `incident_id`. Nothing is shared, so nothing is deduplicated.
+- The same applies to a producer's retry. Replica B has never seen the `event_id`, so it treats
+  a duplicate as a first receipt and pays for a second inference. The replay guard is per-process
+  memory, not a shared ledger.
 - The audit trail for one incident must be one append-only list. Splitting it across processes
   would make the ordering guarantee in
   [`docs/architecture/approval-workflow.md`](../architecture/approval-workflow.md) untrue.
@@ -54,13 +58,14 @@ Scaling this service means replacing the in-memory store with a shared one first
 ADR-0002). It is not a knob to turn here.
 
 Restarting the container is a clean reset: every tracked incident, its approval decision and
-its audit trail are gone. That is the documented behaviour of this slice, not a data-loss
-regression.
+its audit trail are gone, and **a restart clears ingestion idempotency memory** with them — a
+producer that retries an `event_id` after a restart gets a new incident and a new inference.
+That is the documented behaviour of this slice, not a data-loss regression.
 
 ## Environment variables
 
 `SENTINEL_*` variables are optional — the image supplies defaults. The `NVIDIA_*` variables
-are required for `POST /api/v1/incidents/analyze` and are read per request.
+are required for the two routes that call the model and are read per request.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -68,27 +73,33 @@ are required for `POST /api/v1/incidents/analyze` and are read per request.
 | `SENTINEL_PORT` | `8000` | Listen port; must match the domain port |
 | `SENTINEL_LOG_LEVEL` | `info` | uvicorn log level |
 | `SENTINEL_ENV` | `production` | Deployment label |
+| `SENTINEL_INGEST_TOKEN` | *(none)* | Shared bearer secret a machine producer presents to `POST /api/v1/events/ingest`. **Secret / runtime only** — no real value in this file, in `.env.example`, or in any committed config |
 | `NVIDIA_API_KEY` | *(none)* | Bearer token for NVIDIA Build. **Required** for incident analysis |
 | `NVIDIA_BASE_URL` | `https://integrate.api.nvidia.com/v1` | OpenAI-compatible endpoint; override only for a different region/endpoint |
 | `NVIDIA_MODEL` | *(none)* | **Required.** Set to `nvidia/nemotron-3.5-lightning-30b-a3b`; there is no fallback model |
 
-**Secrets:** `NVIDIA_API_KEY` is the only sensitive value in this list. Add it as a Coolify
-**secret** environment variable (build-time and run-time) rather than a plain variable, so it
-is masked in the UI and not written into committed files. Never commit it, and never put a
-real value in `.env.example`.
+**Secrets:** `NVIDIA_API_KEY` and `SENTINEL_INGEST_TOKEN` are the two sensitive values in this
+list. Add both as Coolify **secret** environment variables (build-time and run-time) rather
+than plain variables, so they are masked in the UI and not written into committed files. Never
+commit either one, never put a real value in `.env.example`, and never pass either as a
+command-line argument — the demo emitter reads the ingest token from the environment only.
 
 The approval workflow adds **no new environment variables** and no new dependencies: there is
-no store to point at, no credential to issue, nothing to configure. Existing deployments
-redeploy cleanly.
+no store to point at, no credential to issue, nothing to configure. Machine ingestion adds
+exactly one: `SENTINEL_INGEST_TOKEN`. Existing deployments redeploy cleanly without it — the
+ingest route answers `503 ingest_not_configured` until the secret is set, so it is switched off
+rather than left open.
 
-There is also **no authentication token to set** — the workflow endpoints are unauthenticated
-in this slice, so protect them at the platform layer (Coolify domain, Traefik auth middleware,
-IP allowlist, or an internal network) rather than exposing `POST …/execute` publicly.
+Machine-to-machine ingestion is bearer-token protected. The public hackathon console remains
+intentionally unauthenticated, and so does `POST /api/v1/incidents/analyze`, which can trigger
+paid inference. So protect the rest at the platform layer (Coolify domain, Traefik auth
+middleware, IP allowlist, or an internal network) rather than exposing `POST …/execute` or
+`POST …/analyze` publicly.
 
 A deployment without `NVIDIA_API_KEY` / `NVIDIA_MODEL` is still valid: `GET /` and
 `GET /health` work, and the analysis endpoint answers `503 provider_not_configured` naming
-the missing variables only. Because incidents enter the workflow store through the analysis
-endpoint, an unconfigured deployment has an empty store and every
+the missing variables only. Because incidents enter the workflow store through the analysis and
+ingestion endpoints, an unconfigured deployment has an empty store and every
 `GET /api/v1/incidents/{incident_id}` answers `404 incident_not_found`.
 
 ## Request timeout
@@ -97,11 +108,18 @@ Live NVIDIA analyses measured **13–48 seconds** end to end, because Nemotron r
 it returns the structured assessment. The application allows up to **90 seconds** of read
 time on the provider call (`READ_TIMEOUT` in `sentinel/nvidia.py`).
 
+Both routes that call the model are synchronous and need the same budget:
+`POST /api/v1/incidents/analyze` and `POST /api/v1/events/ingest`. A producer posting an event
+waits for the assessment before it gets its incident pointer back, so its client timeout has to
+be *longer* than the proxy's — `scripts/send_demo_event.py` uses 120 seconds for that reason.
+
 Set the service's proxy/request timeout **above 90 seconds** (Coolify: *Configuration →
 Advanced → HTTP timeout / Read timeout*, or the equivalent Traefik/Caddy middleware
 timeout). If the proxy times out first, the operator sees a proxy-generated `502`/`504`
 instead of Sentinel's own `{"detail":{"error":"provider_timeout",…}}`, and the inference
-cost is paid for nothing.
+cost is paid for nothing. The same holds for an ingested event: the producer sees a proxy
+error, does not get the `incident_id`, and retries — and only the in-process ledger can turn
+that retry into a replay rather than a second paid inference.
 
 `GET /health` never calls the model, so Docker's `HEALTHCHECK` and Coolify's health probe are
 unaffected by this latency budget.
@@ -161,14 +179,55 @@ because refusals are audited too. **Nothing real is touched** — the action is 
 
 The image declares a Docker `HEALTHCHECK` that polls `/health` every 30s using the Python standard library, so Coolify and Docker both surface container health without an external probe binary. The image also installs `curl` so Coolify's own HTTP healthcheck can run inside the container.
 
+## Verify machine ingestion
+
+First, the guard. The token check is a route dependency, so it runs **before** the request body
+is parsed — that is why an unauthenticated caller gets a `401` for any payload at all, including
+this empty one:
+
+```bash
+curl -s -D - -o /dev/null -X POST https://<your-domain>/api/v1/events/ingest \
+  -H 'Content-Type: application/json' -d '{}'
+```
+
+Expect `401` with a `www-authenticate: Bearer` response header. `404` or `422` instead would
+mean the body was read before the secret was checked. If the deployment has no
+`SENTINEL_INGEST_TOKEN` at all, the same call answers `503 ingest_not_configured` — the route is
+switched off, not open.
+
+Then the loop, with the secret present only in the shell that runs the command:
+
+```bash
+export SENTINEL_INGEST_TOKEN=...   # pasted from the Coolify secret, never committed
+
+curl -s --max-time 120 -i -X POST https://<your-domain>/api/v1/events/ingest \
+  -H "Authorization: Bearer $SENTINEL_INGEST_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"event_id":"deploy-check-0001","source":"novaops","event_type":"ram_high","title":"API latency spike","description":"p95 180ms -> 2.4s","severity_hint":"warning","evidence":["error rate 8.2%","CPU 91%"]}'
+```
+
+Expect `201`, a `Location` header, and a body shaped like
+`{"event_id":"deploy-check-0001","incident_id":"inc_…","workflow_state":"awaiting_approval","duplicate":false,"console_path":"/?incident=inc_…"}`. `console_path` is relative by design —
+paste it onto the deployment's own domain and the console opens the incident the producer created,
+with `event_ingested` as the first audit event.
+
+Re-send the identical `event_id` and expect `200` with `"duplicate": true` and the **same**
+`incident_id`, answered in milliseconds rather than the 13–48 seconds a real inference takes.
+That turnaround is the proof the replay guard works and the model was not called twice. A
+`409 event_in_progress` means the first request is still mid-flight.
+
 ## Rollback
 
 Redeploy the previous commit from `main`. There is no migration or data step to reverse: the
-only persisted state is the in-memory workflow store, which a redeploy discards. Open
-incidents (awaiting approval or approved but not yet executed) are lost, and their `incident_id`
-will answer `404` after the rollback — operators re-analyse rather than resume.
+only persisted state is the in-memory workflow store and the in-process idempotency ledger, and
+a redeploy discards both. Open incidents (awaiting approval or approved but not yet executed)
+are lost, and their `incident_id` will answer `404` after the rollback — operators re-analyse
+rather than resume. A producer retrying an `event_id` the old process already handled gets a
+fresh incident, because the replay guard went with the restarted process.
 
 Commits before the NVIDIA integration do not have the analysis endpoint at all; commits before
 TASK-012 do not have the workflow routes, so a rolled-back deployment will answer `404` for
-`/api/v1/incidents/{incident_id}` even for ids that existed before the rollback.
+`/api/v1/incidents/{incident_id}` even for ids that existed before the rollback. Commits before
+TASK-014 do not have `POST /api/v1/events/ingest`, so a producer pointing at a rolled-back
+deployment gets `404`, not a `401` — the route is simply not there.
 
