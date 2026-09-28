@@ -22,8 +22,10 @@ OBSERVE → UNDERSTAND → DECIDE → ACT / REQUEST APPROVAL → VERIFY → LEAR
 **Early implementation / Hackathon build** — Active development for the NVIDIA competition.
 
 The repository currently contains a **deployable vertical slice**: a single FastAPI container
-that serves the landing/status page, a health endpoint, **real NVIDIA model incident
-analysis**, and an **approval-gated workflow** with an audit trail.
+that serves an **operational demo console** at `/`, a health endpoint, **real NVIDIA model
+incident analysis**, and an **approval-gated workflow** with an audit trail. A judge can open one
+URL and walk the whole loop without curl, Postman or developer tools — see
+[`docs/architecture/operational-console.md`](docs/architecture/operational-console.md).
 
 ```
 Operational event → OBSERVE → NVIDIA model analysis → UNDERSTAND → DECIDE
@@ -54,7 +56,9 @@ sentinel/nvidia.py    NVIDIA Build client: forced tool call, timeouts, provider 
 sentinel/workflow.py  state machine, approval gate, audit trail, in-memory store
 sentinel/simulation.py  simulated action catalog — the only code that "does" anything
 sentinel/schemas.py   contracts for the event, the assessment, the workflow state and audit events
-static/index.html     Landing/status page (plain HTML, no build step)
+static/index.html     The operational demo console — plain HTML, no build step
+static/styles.css     Console styling on the existing design tokens
+static/app.js         Console behaviour: same-origin fetch + render, no framework, no CDN
 Dockerfile            python:3.13-slim, non-root UID 10001, HEALTHCHECK on /health
 requirements.txt      Fully pinned runtime dependencies
 ```
@@ -82,7 +86,8 @@ export NVIDIA_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b
 uvicorn sentinel.api:app --reload
 ```
 
-Then open <http://127.0.0.1:8000> for the landing page and <http://127.0.0.1:8000/health> for the health check.
+Then open <http://127.0.0.1:8000> for the demo console and <http://127.0.0.1:8000/health> for the health check.
+The console needs no separate server or port: FastAPI serves `static/` itself.
 
 Run the tests (they mock the provider at the HTTP transport layer, so no API key is needed):
 
@@ -129,7 +134,7 @@ service. Its one limit is a compile-time constant (`MAX_TRACKED_INCIDENTS = 200`
 | Method | Path | Response |
 |---|---|---|
 | `GET` | `/health` | `200` → `{"status":"ok","service":"novabrain-sentinel"}` |
-| `GET` | `/` | `200` → landing/status page |
+| `GET` | `/` | `200` → the operational demo console (HTML, strict CSP on this response only) |
 | `POST` | `/api/v1/incidents/analyze` | `200` → structured assessment; `422` invalid event; `502`/`503`/`504` provider failure |
 | `GET` | `/api/v1/incidents/{incident_id}` | `200` → full workflow record; `404` unknown incident |
 | `POST` | `/api/v1/incidents/{incident_id}/approve` | `200` → updated record; `409` not awaiting approval |
@@ -269,7 +274,24 @@ provider latency.
 
 ## Demo
 
-> Demo URL will be published here once the application is deployed.
+**<https://sentinel.novatechsystem.co.uk>** — the operational console, no login.
+
+Four clicks, no page reload, no developer tools:
+
+| # | Click | What the page shows |
+|---|---|---|
+| 1 | **Run Demo Incident** | a spinner and real elapsed seconds while NVIDIA Nemotron assesses the prefilled incident (13–48 s), then severity, confidence, provider/model, summary, likely causes, recommended actions and the "Decision rationale" |
+| 2 | **Attempt Execution** | `409 approval_required` rendered as *"Execution blocked by Sentinel policy — approval is required before this action can run"*, and the audit trail gains `execution_blocked`. This is the safety feature, not an error |
+| 3 | **Approve** | the ⚠ HUMAN APPROVAL REQUIRED gate closes, the decision is recorded with actor, note and timestamp |
+| 4 | **Execute** | `VERIFIED` with `Simulation: YES` and the before → after metric snapshots exactly as the backend returned them |
+
+The trail below the panels holds all of it in append order, with Sentinel-authored events
+visually distinct from operator-authored ones. **Clear / New Incident** resets the page for the
+next judge.
+
+Nothing in the demo path is a stub: submission, inference, severity, causes, recommendations,
+the approval policy, the state machine and the audit trail are the production code paths. Only
+the remediation and its measurements are simulated, and the page says so permanently.
 
 ## Evaluation
 
@@ -298,14 +320,18 @@ resolved in the world.
   `executes: False`. No workflow code spawns a process or opens a socket; the only outbound
   network call in the codebase is the NVIDIA inference request in `nvidia.py`
 - **Least privilege** — Minimal permissions for each component
+- **Console surface** — the page is locked to its own assets by a CSP on `GET /` alone
+  (`script-src 'self'`, no inline script, no CDN, no `frame-ancestors`), calls only same-origin
+  routes, and never sees the NVIDIA key, the provider base URL or any reasoning trace
 - **Secrets management** — No credentials in source code; environment-based configuration
 - **Input validation** — All external inputs are validated and sanitized
 - **Defense in depth** — Multiple layers of security controls
 
 Known gaps, stated rather than implied: the workflow has **no authentication** (any client that
-can reach the port can approve its own incident, and every actor is recorded as `operator`), and
-its state is **in-memory only**, so an audit trail does not survive a restart. Closing both is
-follow-on work, not part of this slice.
+can reach the port can approve its own incident — the console makes that one click away, and
+every actor is still recorded as `operator` regardless of who pressed it), and its state is
+**in-memory only**, so an audit trail does not survive a restart. Closing both is follow-on work,
+not part of this slice.
 
 ## Repository Relationship
 

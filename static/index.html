@@ -3,108 +3,197 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NovaBrain Sentinel</title>
+<title>NovaBrain Sentinel — Operational Console</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0f14'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%2376b900'/%3E%3C/svg%3E">
-<style>
-  :root {
-    --bg: #0b0f14;
-    --panel: #131a23;
-    --line: #232f3d;
-    --text: #e6edf3;
-    --muted: #9db0c2;
-    --accent: #76b900;
-    --ok: #3fb950;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
-    padding: 2rem 1.25rem;
-    background: var(--bg);
-    color: var(--text);
-    font: 400 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  }
-  main { width: 100%; max-width: 50rem; }
-  .eyebrow {
-    color: var(--accent);
-    font: 600 0.75rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    margin: 0 0 0.75rem;
-  }
-  h1 { font-size: clamp(1.9rem, 5vw, 2.75rem); margin: 0 0 0.5rem; letter-spacing: -0.02em; }
-  .tagline { color: var(--muted); margin: 0 0 2rem; max-width: 34rem; }
-  .loop {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 1.25rem;
-    margin: 0 0 1.5rem;
-  }
-  .loop h2 {
-    font: 600 0.7rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 0 0 1rem;
-  }
-  /* One unbroken chain; scrolls instead of wrapping so no arrow dangles at a line end. */
-  .stages { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.5rem; margin: 0; padding: 0 0 0.25rem; list-style: none; overflow-x: auto; }
-  .stages li { display: flex; align-items: center; gap: 0.5rem; }
-  .chip {
-    font: 500 0.82rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-    color: var(--text);
-    background: #1b2531;
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 0.5rem 0.65rem;
-    white-space: nowrap;
-  }
-  .sep { color: var(--accent); }
-  .status {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    border-top: 1px solid var(--line);
-    padding-top: 1.25rem;
-    font: 500 0.95rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px rgba(63,185,80,0.18); flex: none; }
-  .label { color: var(--muted); }
-  .value { color: var(--ok); }
-  footer { color: var(--muted); font-size: 0.8rem; margin-top: 2rem; }
-  a { color: var(--accent); }
-</style>
+<link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-<main>
-  <p class="eyebrow">NVIDIA Build Challenge</p>
-  <h1>NovaBrain Sentinel</h1>
-  <p class="tagline">Persistent operational AI agent. Early hackathon build &mdash; deployable vertical slice.</p>
-
-  <section class="loop">
-    <h2>Cognitive loop</h2>
-    <ul class="stages">
-      <li><span class="chip">OBSERVE</span><span class="sep" aria-hidden="true">&rarr;</span></li>
-      <li><span class="chip">UNDERSTAND</span><span class="sep" aria-hidden="true">&rarr;</span></li>
-      <li><span class="chip">DECIDE</span><span class="sep" aria-hidden="true">&rarr;</span></li>
-      <li><span class="chip">ACT / REQUEST APPROVAL</span><span class="sep" aria-hidden="true">&rarr;</span></li>
-      <li><span class="chip">VERIFY</span><span class="sep" aria-hidden="true">&rarr;</span></li>
-      <li><span class="chip">LEARN</span></li>
-    </ul>
-  </section>
-
-  <p class="status">
-    <span class="dot" aria-hidden="true"></span>
-    <span class="label">System Status:</span>
-    <span class="value">Operational</span>
+<header class="topbar">
+  <div class="topbar-main">
+    <p class="eyebrow">NVIDIA Build Challenge</p>
+    <h1>NovaBrain Sentinel</h1>
+    <p class="subtitle">Persistent Operational AI Agent</p>
+  </div>
+  <p class="health">
+    <span class="dot dot-checking" id="status-dot" aria-hidden="true"></span>
+    <span class="health-label">Status:</span>
+    <span id="status-value" data-ok="ONLINE" data-off="OFFLINE">checking</span>
   </p>
+</header>
 
-  <footer>
-    <a href="/health">/health</a>
-  </footer>
+<section class="loop" aria-label="Cognitive loop">
+  <h2 class="strip-label">Cognitive loop</h2>
+  <ul class="stages">
+    <li><span class="chip real" data-stage="OBSERVE" data-stage-status="real">OBSERVE</span><span class="sep" aria-hidden="true">&rarr;</span></li>
+    <li><span class="chip real" data-stage="UNDERSTAND" data-stage-status="real">UNDERSTAND</span><span class="sep" aria-hidden="true">&rarr;</span></li>
+    <li><span class="chip real" data-stage="DECIDE" data-stage-status="real">DECIDE</span><span class="sep" aria-hidden="true">&rarr;</span></li>
+    <li><span class="chip sim" data-stage="ACT / REQUEST APPROVAL" data-stage-status="simulated">ACT / REQUEST APPROVAL</span><span class="sep" aria-hidden="true">&rarr;</span></li>
+    <li><span class="chip sim" data-stage="VERIFY" data-stage-status="simulated">VERIFY</span><span class="sep" aria-hidden="true">&rarr;</span></li>
+    <li><span class="chip planned" data-stage="LEARN" data-stage-status="planned">LEARN &middot; not implemented</span></li>
+  </ul>
+  <p class="legend">
+    <span class="key real"></span> real &nbsp;
+    <span class="key sim"></span> simulated in a lab &nbsp;
+    <span class="key planned"></span> not implemented yet
+  </p>
+</section>
+
+<p class="runbar">
+  <span class="runbar-item">Incident <span id="a-incident">&mdash;</span></span>
+  <span class="runbar-item">Workflow <span id="state-value">idle</span></span>
+  <span class="runbar-item run-status is-hidden" id="run-status">
+    <span class="spinner" aria-hidden="true"></span><span id="run-label">Working</span>
+    <span id="run-elapsed">0s</span>
+  </span>
+</p>
+
+<div class="notice is-hidden" id="notice" role="status">
+  <p class="notice-title" id="notice-title"></p>
+  <p class="notice-detail" id="notice-detail"></p>
+</div>
+
+<main class="console">
+  <div class="column">
+    <section class="panel" id="panel-incident" aria-labelledby="h-incident">
+      <h2 id="h-incident"><span class="step">1</span> Observe &middot; Incident</h2>
+      <p class="panel-hint">Edit anything, or run it as-is. The incident is sent to the backend exactly as written here.</p>
+      <div class="field">
+        <label for="f-source">Source</label>
+        <input id="f-source" name="source" type="text" value="novaops" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-title">Title</label>
+        <input id="f-title" name="title" type="text" value="API latency spike" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-description">Description</label>
+        <textarea id="f-description" name="description" rows="2">p95 latency increased from 180ms to 2.4s</textarea>
+      </div>
+      <div class="field">
+        <label for="f-severity">Severity hint</label>
+        <select id="f-severity" name="severity_hint">
+          <option value="unknown" selected>unknown</option>
+          <option value="informational">informational</option>
+          <option value="low">low</option>
+          <option value="medium">medium</option>
+          <option value="high">high</option>
+          <option value="critical">critical</option>
+        </select>
+        <span class="field-help">A hint only. Sentinel&rsquo;s model decides the real severity.</span>
+      </div>
+      <div class="field">
+        <label for="f-evidence">Evidence</label>
+        <textarea id="f-evidence" name="evidence" rows="2">error rate increased to 8.2%
+CPU increased to 91%</textarea>
+        <span class="field-help">One observation per line.</span>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn primary" id="btn-run">Run Demo Incident</button>
+        <button type="button" class="btn" id="btn-clear">Clear / New Incident</button>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-action" aria-labelledby="h-action">
+      <h2 id="h-action"><span class="step">4</span> Act &middot; Remediation</h2>
+      <p class="badge sim">SIMULATED ACTION</p>
+      <div class="field">
+        <label for="f-action">Action</label>
+        <select id="f-action" name="action">
+          <option value="scale_api_replicas" selected>Scale API Replicas</option>
+          <option value="restart_api_service">Restart API Service</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn primary" id="btn-execute" disabled>Execute simulated action</button>
+        <button type="button" class="btn warn" id="btn-attempt" disabled>Attempt Execution</button>
+      </div>
+      <p class="safety">Demo safety mode: execution and verification are simulated. Sentinel never touches a real service.</p>
+    </section>
+  </div>
+
+  <div class="column">
+    <section class="panel" id="panel-assessment" aria-labelledby="h-assessment">
+      <h2 id="h-assessment"><span class="step">2</span> Understand &middot; Assessment</h2>
+      <p class="placeholder" id="a-empty">No assessment yet. Run the demo incident &mdash; a real NVIDIA model call takes about 15&ndash;50 seconds.</p>
+      <dl class="facts is-hidden" id="a-facts">
+        <dt>Severity</dt><dd class="sev" id="a-severity">&mdash;</dd>
+        <dt>Confidence</dt><dd id="a-confidence">&mdash;</dd>
+        <dt>Model</dt><dd id="a-model">&mdash;</dd>
+        <dt>Requires approval</dt><dd id="a-approval">&mdash;</dd>
+      </dl>
+      <div class="is-hidden" id="a-body">
+        <p class="summary" id="a-summary"></p>
+        <h3>Likely causes</h3>
+        <ul class="bullets" id="a-causes"></ul>
+        <h3>Recommended actions</h3>
+        <ul class="bullets" id="a-actions"></ul>
+        <h3>Decision rationale</h3>
+        <p class="rationale" id="a-rationale"></p>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-approval" aria-labelledby="h-approval">
+      <h2 id="h-approval"><span class="step">3</span> Decide &middot; Approval gate</h2>
+      <p class="placeholder" id="ap-empty">The approval gate opens once Sentinel has assessed an incident.</p>
+      <div class="is-hidden" id="ap-body">
+        <p class="gate-flag" id="ap-flag"></p>
+        <p class="gate-explain" id="ap-explain"></p>
+        <p class="gate-decision is-hidden" id="ap-decision"></p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="btn-approve" disabled>Approve</button>
+          <button type="button" class="btn danger" id="btn-reject" disabled>Reject</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-verification" aria-labelledby="h-verification">
+      <h2 id="h-verification"><span class="step">5</span> Verify &middot; Outcome</h2>
+      <p class="placeholder" id="v-empty">Nothing has been executed yet.</p>
+      <dl class="facts is-hidden" id="v-facts">
+        <dt>Action</dt><dd id="v-action">&mdash;</dd>
+        <dt>Result</dt><dd id="v-status">&mdash;</dd>
+        <dt>Simulation</dt><dd id="v-simulation">&mdash;</dd>
+      </dl>
+      <div class="is-hidden" id="v-body">
+        <h3>Before &rarr; after</h3>
+        <ul class="metrics" id="v-metrics"></ul>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-audit" aria-labelledby="h-audit">
+      <h2 id="h-audit"><span class="step">6</span> Audit &middot; Trail</h2>
+      <p class="placeholder" id="audit-empty">The trail fills as the incident moves through the loop.</p>
+      <ol class="trail is-hidden" id="audit-list"></ol>
+    </section>
+  </div>
 </main>
+
+<footer class="disclosure">
+  <p class="disclosure-badge">Real NVIDIA inference &middot; Safe simulated remediation</p>
+  <div class="disclosure-cols">
+    <div>
+      <h3>Real</h3>
+      <ul>
+        <li>Incident submission</li>
+        <li>NVIDIA Nemotron inference</li>
+        <li>Severity, causes, recommendations</li>
+        <li>Sentinel policy</li>
+        <li>Approval state machine</li>
+        <li>Audit trail</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Simulated</h3>
+      <ul>
+        <li>Remediation execution</li>
+        <li>Before / after remediation metrics</li>
+        <li>Verification result</li>
+      </ul>
+    </div>
+  </div>
+  <p class="muted">One container, no database, no login. <a href="/docs">API docs</a> &middot; <a href="/health">/health</a></p>
+</footer>
+
+<script src="/static/app.js" defer></script>
 </body>
 </html>

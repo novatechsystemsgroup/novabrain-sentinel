@@ -148,6 +148,84 @@ the run's input was authored to match, not because anything was measured. No met
 - `GET /` and `GET /health` re-checked against the same image; the TASK-011 analysis response
   is byte-compatible with its documented shape.
 
+## Console walkthrough — TASK-013 (2026-09-28)
+
+> **Real NVIDIA inference + simulated execution and verification — not real remediation.**
+
+The same loop was driven a second time, but through the browser at `GET /` instead of an HTTP
+client, to check the operator-facing claims rather than the API ones: that a judge can reach a
+verdict in four clicks, that the gate is visible before it is crossed, and that nothing in the
+page invents a number the backend did not return.
+
+| | |
+|---|---|
+| Artifact | `docker build` of the working tree (`sha256:c1c2ea7a…`), run as `sentinel-console` on `127.0.0.1:8022`, non-root UID 10001, one worker |
+| Provider | NVIDIA Build, live. `NVIDIA_API_KEY` injected with `docker run -e NAME` at run time only |
+| Input | the prefilled demo incident: `source=novaops`, `title="API latency spike"`, `severity_hint=unknown`, evidence `error rate increased to 8.2 %`, `CPU increased to 91 %` |
+| Viewports | 1440 × 900 and 390 × 844 |
+
+### Timings
+
+One run was timed from the click handler to the first audit event, so the number is the
+provider's, not a polling artefact:
+
+| Measurement | Value |
+|---|---|
+| Run click → `incident_analyzed` | **13.17 s** (`20:02:35.240` → `20:02:48.413`) |
+| Run click → `incident_analyzed`, second console run at 390 px | ≈ 11 s (click noted to the nearest second) |
+| `incident_analyzed` → `approval_requested` | 0.19 ms |
+| `execution_requested` → `execution_finished` | 3.56 ms |
+| `execution_finished` → `verification_recorded` | 0.02 ms |
+| Whole workflow after the model answers | under 4 ms |
+
+Both console runs sit in the 11–13 s band, which is inside the 12.8–47.1 s range TASK-011
+measured for the same input and the same model. The UI adds nothing measurable; the wait is the
+provider's. The two human pauses in the trail (139.6 s to read and approve, 12.1 s to request
+execution) are the operator, and they are recorded as such.
+
+### Path taken at 390 px, then repeated at 1440 px
+
+| Step | What the operator does | What the page showed |
+|---|---|---|
+| 1 | *Run Demo Incident* | Real elapsed seconds, no percentage, assessment panel left reading "No assessment yet." |
+| 2 | read the assessment | `severity: high`, `confidence: 0.87`, `requires_approval: true`, model name, and a one-sentence rationale |
+| 3 | *Attempt Execution* (before approving) | **`409`** rendered as "Execution blocked by Sentinel policy — approval is required before this action can run.", and the attempt written to the trail as `execution_blocked` / `operator` |
+| 4 | *Approve*, then *Execute simulated action* | state `verified`, `Simulation: YES · simulated`, before/after metrics, every action button disabled |
+
+The 1440 px run ended with a 7-event trail in append order:
+`incident_analyzed → approval_requested → execution_blocked → approval_granted →
+execution_requested → execution_finished → verification_recorded`. The 390 px run produced the
+same shape without the premature attempt.
+
+### Claims checked against the rendered DOM
+
+- The before/after figures on screen (`2 → 4`, `2400 → 610`, `8.2 → 0.4`, `0 → 0`) are the
+  backend's `verification` object verbatim. `renderVerification` reads
+  `verification.before[key]` and `verification.after[key]` for every row; the only literals it
+  holds are display labels. The `8.2 %` / `91 %` that do appear in `static/app.js` are the
+  prefilled demo incident's evidence text, on the input side of the loop.
+- `severity_hint=unknown` was again raised to `high` by the model, so the prefilled hint is not
+  steering the result.
+- Scan of `document.documentElement.outerHTML` after a full run: `nvapi-`,
+  `integrate.api.nvidia.com`, `reasoning_content`, `api_key`, `NVIDIA_API_KEY` and `Bearer ` all
+  occur **0** times.
+- The page loads exactly one script and one stylesheet, both same-origin under `/static/`, with
+  no inline script, no inline handler and no off-origin subresource.
+- CSP is present on `GET /` and absent on `/api/*` and `/static/*`, as designed. Note that
+  `HEAD /` answers `405` because only `GET` is routed — check headers with `curl -s -D -`, not
+  `curl -I`.
+- Panels stack in loop order (`OBSERVE → UNDERSTAND → DECIDE → ACT → VERIFY → AUDIT`) at 390 px;
+  at 1440 px the two-column pairing is unchanged.
+- `GET /health` is byte-identical to the TASK-011 shape; the container still runs as UID 10001.
+
+### Browser console
+
+One error across the whole session, and it is Chrome's own network log:
+`Failed to load resource: the server responded with a status of 409 (Conflict)` for the
+deliberate pre-approval execution in step 3. Zero JavaScript errors, zero warnings. Any non-2xx
+fetch produces that line, so it cannot be removed without hiding the safety behaviour the demo
+exists to show.
+
 ## Not yet measured
 
 `LEARN` is not implemented, so there is nothing to evaluate for it.

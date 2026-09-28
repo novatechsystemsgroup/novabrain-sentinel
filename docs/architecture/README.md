@@ -8,6 +8,7 @@ replica a correctness requirement rather than a preference.
 |---|---|
 | [incident-analysis.md](incident-analysis.md) | `POST /api/v1/incidents/analyze` — the OBSERVE → UNDERSTAND → DECIDE slice, NVIDIA forced-tool-call integration, approval policy, privacy boundary, failure modes, measured latency |
 | [approval-workflow.md](approval-workflow.md) | `GET /api/v1/incidents/{id}` and the approve / reject / execute routes — the state machine, the execution invariant, the audit trail, simulated remediation, in-memory store semantics and its eviction rule |
+| [operational-console.md](operational-console.md) | `GET /` — the three static files, the rendering contract (state / numbers / order come from the response), the console-scoped CSP, the error taxonomy in product language, the drift guards |
 
 Design decisions with their alternatives are in [`../decisions/`](../decisions/); deployment
 constraints are in [`../deployment/coolify.md`](../deployment/coolify.md).
@@ -21,7 +22,9 @@ sentinel/nvidia.py    provider config, request payload, HTTP call, error taxonom
 sentinel/schemas.py   request/response contracts, workflow states, action names, audit event
 sentinel/workflow.py  state machine, approval gate, audit trail, in-memory store
 sentinel/simulation.py  simulated action catalog — the only code that "does" anything
-static/index.html     landing & status page (plain HTML, no build step)
+static/index.html     the demo console — markup and prefilled incident (plain HTML, no build step)
+static/styles.css     console styling on the existing design tokens
+static/app.js         console behaviour: same-origin fetch, render-from-response, no framework
 Dockerfile            python:3.13-slim, curl for the platform healthcheck, non-root UID 10001
 ```
 

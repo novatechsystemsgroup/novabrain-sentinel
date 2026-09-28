@@ -22,11 +22,21 @@ def test_health_returns_ok():
     assert response.json() == {"status": "ok", "service": "novabrain-sentinel"}
 
 
+CONSOLE_MARKERS = (
+    "NovaBrain Sentinel",
+    "ONLINE",
+    "OBSERVE",
+    "LEARN",
+    "Run Demo Incident",
+    "Real NVIDIA inference",
+    "Safe simulated remediation",
+)
+
+
 def test_landing_page_renders():
     response = get("/")
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
     body = response.text
-    assert "NovaBrain Sentinel" in body
-    assert "OBSERVE" in body and "LEARN" in body
-    assert "Operational" in body
+    for marker in CONSOLE_MARKERS:
+        assert marker in body, f"console is missing {marker!r}"

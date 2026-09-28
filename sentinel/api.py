@@ -6,6 +6,7 @@ from pathlib import Path
 import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .analysis import analyze_event
 from .nvidia import ProviderError
@@ -20,6 +21,14 @@ from .workflow import WORKFLOW_ERROR_STATUS, WorkflowError, WorkflowStore
 
 SERVICE_NAME = "novabrain-sentinel"
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+
+# Scoped to the console document alone, never to middleware: /docs, /health and
+# the API responses must keep working while the page is locked to its own assets.
+CONSOLE_CSP = (
+    "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; "
+    "img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'none'; "
+    "frame-ancestors 'none'"
+)
 
 PROVIDER_ERROR_STATUS = {
     "provider_not_configured": 503,
@@ -37,6 +46,7 @@ def create_app(
 ) -> FastAPI:
     app = FastAPI(title="NovaBrain Sentinel")
     workflow_store = store or WorkflowStore()
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -44,7 +54,9 @@ def create_app(
 
     @app.get("/")
     def landing() -> FileResponse:
-        return FileResponse(STATIC_DIR / "index.html")
+        return FileResponse(
+            STATIC_DIR / "index.html", headers={"Content-Security-Policy": CONSOLE_CSP}
+        )
 
     @app.post("/api/v1/incidents/analyze", response_model=IncidentAnalysis)
     async def analyze_incident(event: IncidentEvent) -> IncidentAnalysis:
