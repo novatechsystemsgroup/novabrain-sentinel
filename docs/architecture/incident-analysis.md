@@ -14,8 +14,9 @@ POST /api/v1/incidents/analyze
         └─→ IncidentAnalysis { incident_id, status, assessment, model }
 ```
 
-`ACT / REQUEST APPROVAL`, `VERIFY` and `LEARN` are not implemented: `recommended_actions`
-are advisory text only, and nothing in this slice executes remediation.
+`recommended_actions` are advisory text: the analysis leg itself executes nothing. What
+happens after an assessment is filed — the approval gate, the simulated action and the audit
+trail — is in [approval-workflow.md](approval-workflow.md).
 
 ## Modules
 

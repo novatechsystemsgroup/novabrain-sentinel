@@ -22,35 +22,51 @@ OBSERVE → UNDERSTAND → DECIDE → ACT / REQUEST APPROVAL → VERIFY → LEAR
 **Early implementation / Hackathon build** — Active development for the NVIDIA competition.
 
 The repository currently contains a **deployable vertical slice**: a single FastAPI container
-that serves the landing/status page, a health endpoint, and **real NVIDIA model incident
-analysis** at `POST /api/v1/incidents/analyze`.
+that serves the landing/status page, a health endpoint, **real NVIDIA model incident
+analysis**, and an **approval-gated workflow** with an audit trail.
 
 ```
-Operational event → OBSERVE → NVIDIA model analysis → UNDERSTAND → DECIDE → structured response
+Operational event → OBSERVE → NVIDIA model analysis → UNDERSTAND → DECIDE
+       → awaiting approval → operator APPROVE / REJECT → ACT (simulated) → VERIFY (simulated)
 ```
 
-Persistence and the remaining loop stages (`ACT / REQUEST APPROVAL`, `VERIFY`, `LEARN`) are
-not implemented yet. `recommended_actions` are recommendations only — nothing executes
-remediation.
+What is real and what is not:
+
+| Stage | Status |
+|---|---|
+| `OBSERVE` / `UNDERSTAND` | **Real** — a live NVIDIA Build call produces and validates the assessment |
+| `DECIDE` | **Real** — Sentinel's approval policy parks high/critical incidents behind an operator gate |
+| `ACT / REQUEST APPROVAL` | Gate is real; the action is **simulated**. Nothing is restarted or scaled |
+| `VERIFY` | **Simulated** — deterministic before/after metric snapshots |
+| `LEARN` | Not implemented |
+
+`recommended_actions` remain advisory text. No endpoint performs real remediation, and
+persistence (`LEARN` included) is not implemented yet — workflow state lives in the process.
 
 ## Architecture
 
 One process, one container, no external services:
 
 ```
-sentinel/api.py       FastAPI app — GET /health, GET /, POST /api/v1/incidents/analyze
+sentinel/api.py       FastAPI app — GET /health, GET /, and the analyze / workflow routes
 sentinel/analysis.py  OBSERVE → UNDERSTAND → DECIDE, plus the Sentinel approval policy
 sentinel/nvidia.py    NVIDIA Build client: forced tool call, timeouts, provider error taxonomy
-sentinel/schemas.py   IncidentEvent / Assessment / IncidentAnalysis contracts
+sentinel/workflow.py  state machine, approval gate, audit trail, in-memory store
+sentinel/simulation.py  simulated action catalog — the only code that "does" anything
+sentinel/schemas.py   contracts for the event, the assessment, the workflow state and audit events
 static/index.html     Landing/status page (plain HTML, no build step)
 Dockerfile            python:3.13-slim, non-root UID 10001, HEALTHCHECK on /health
 requirements.txt      Fully pinned runtime dependencies
 ```
 
 There is no database, cache, queue, or auth layer in this slice by design; the only outbound
-dependency is the NVIDIA Build API. See
-[`docs/architecture/incident-analysis.md`](docs/architecture/incident-analysis.md) for the
-analysis path, failure modes and privacy boundary.
+dependency is the NVIDIA Build API. `analysis.py` and `nvidia.py` know nothing about the
+workflow, so the model-facing path is unchanged by everything downstream of it.
+
+See [`docs/architecture/incident-analysis.md`](docs/architecture/incident-analysis.md) for the
+analysis path, failure modes and privacy boundary, and
+[`docs/architecture/approval-workflow.md`](docs/architecture/approval-workflow.md) for the
+state machine, the execution invariant and the audit trail.
 
 ## Local development
 
@@ -104,6 +120,10 @@ endpoint.
 Without `NVIDIA_API_KEY` / `NVIDIA_MODEL`, `POST /api/v1/incidents/analyze` returns `503
 provider_not_configured` while `GET /` and `GET /health` keep working.
 
+The approval workflow adds **no configuration**: no new variables, no dependencies, no backing
+service. Its one limit is a compile-time constant (`MAX_TRACKED_INCIDENTS = 200`) documented in
+[`docs/architecture/approval-workflow.md`](docs/architecture/approval-workflow.md).
+
 ## API
 
 | Method | Path | Response |
@@ -111,6 +131,10 @@ provider_not_configured` while `GET /` and `GET /health` keep working.
 | `GET` | `/health` | `200` → `{"status":"ok","service":"novabrain-sentinel"}` |
 | `GET` | `/` | `200` → landing/status page |
 | `POST` | `/api/v1/incidents/analyze` | `200` → structured assessment; `422` invalid event; `502`/`503`/`504` provider failure |
+| `GET` | `/api/v1/incidents/{incident_id}` | `200` → full workflow record; `404` unknown incident |
+| `POST` | `/api/v1/incidents/{incident_id}/approve` | `200` → updated record; `409` not awaiting approval |
+| `POST` | `/api/v1/incidents/{incident_id}/reject` | `200` → updated record; `409` not awaiting approval |
+| `POST` | `/api/v1/incidents/{incident_id}/execute` | `200` → simulated action + verification; `409` blocked; `422` unknown action |
 
 ```bash
 curl -s -X POST http://127.0.0.1:8000/api/v1/incidents/analyze \
@@ -148,9 +172,71 @@ Provider failures are structured too:
 { "detail": { "error": "provider_timeout", "message": "NVIDIA did not respond within the allowed time" } }
 ```
 
+### Approval workflow
+
+`POST /api/v1/incidents/analyze` also files the incident in the workflow store. A `high` or
+`critical` assessment opens in `awaiting_approval` and cannot act until an operator decides.
+Execution is allowed **iff** `requires_approval` is false **or** the incident is `approved` —
+and `rejected` incidents never execute, permanently.
+
+```bash
+ID=inc_ae3dc4898d774d938d1b7053d796ba8a
+
+curl -s -X POST http://127.0.0.1:8000/api/v1/incidents/$ID/execute \
+  -H 'Content-Type: application/json' -d '{"action":"scale_api_replicas"}'
+# 409 {"detail":{"error":"approval_required","message":"This incident is awaiting an operator approval."}}
+
+curl -s -X POST http://127.0.0.1:8000/api/v1/incidents/$ID/approve \
+  -H 'Content-Type: application/json' -d '{"note":"Approved for simulated scale-out."}'
+# 200 {"state":"approved", …}
+
+curl -s -X POST http://127.0.0.1:8000/api/v1/incidents/$ID/execute \
+  -H 'Content-Type: application/json' -d '{"action":"scale_api_replicas"}'
+# 200 {"state":"verified", "verification":{"status":"verified","simulated":true, …}}
+```
+
+The `verification` block is the simulated outcome, not a measurement:
+
+```json
+{
+  "status": "verified",
+  "simulated": true,
+  "before": { "api_replicas": 2, "p95_latency_ms": 2400, "error_rate_percent": 8.2, "service_restarts": 0 },
+  "after":  { "api_replicas": 4, "p95_latency_ms": 610,  "error_rate_percent": 0.4, "service_restarts": 0 },
+  "success": true
+}
+```
+
+`GET /api/v1/incidents/{incident_id}` returns the whole evidence bundle — the original event,
+the NVIDIA assessment, the state, the approval decision, the selected action, the verification
+and the ordered audit trail. This is a real trail from a live run (one genuine analysis, one
+premature attempt, one approval, one simulated action, one repeat attempt):
+
+```
+18:49:55.710578  incident_analyzed      sentinel  {"severity":"high","confidence":0.92,"requires_approval":true,…}
+18:49:55.710785  approval_requested     sentinel  {"severity":"high","reason":"Sentinel approval policy requires an operator decision."}
+18:49:55.731204  execution_blocked      operator  {"action":"scale_api_replicas","reason":"approval_required"}
+18:49:55.734057  approval_granted       operator  {"note":"Approved for simulated scale-out on the demo cluster."}
+18:49:55.735724  execution_requested    operator  {"action":"scale_api_replicas","mode":"simulated","note":"simulated only"}
+18:49:55.735797  execution_finished     sentinel  {"action":"scale_api_replicas","state":"verified"}
+18:49:55.735801  verification_recorded  sentinel  {"status":"verified","success":true,"simulated":true}
+18:49:55.737154  execution_blocked      operator  {"action":"restart_api_service","reason":"already_executed"}
+```
+
+Blocked attempts are audited too: a refusal leaves a record of what was asked and why it was
+denied. **Append order is the authoritative sequence** — adjacent events may share a timestamp,
+so read the list in order rather than sorting by `timestamp`.
+
+The surface is closed: an operator can only `approve` or `reject`, and the action catalog has
+exactly two entries, `scale_api_replicas` and `restart_api_service`. Anything else is a `422`
+before the store sees it. `restart_api_service` on a `critical` incident deterministically
+yields `failed`, which is how both terminal outcomes stay demonstrable without randomness.
+
 ## Deployment
 
-Deployed as a Dockerfile-built application on Coolify. See [`docs/deployment/coolify.md`](docs/deployment/coolify.md).
+Deployed as a Dockerfile-built application on Coolify. Because workflow state is per-process,
+this slice must run as **exactly one replica** — see
+[`docs/deployment/coolify.md`](docs/deployment/coolify.md).
 
 ## NVIDIA Model Integration
 
@@ -187,16 +273,39 @@ provider latency.
 
 ## Evaluation
 
-> Evaluation methodology, metrics, and results will be documented in [`docs/evaluation/`](docs/evaluation/).
+Measured runs of the shipped artifact are recorded in [`docs/evaluation/`](docs/evaluation/):
+
+- **TASK-011** — two live NVIDIA analyses (12.8 s and 47.1 s for the same input), the leak
+  checks, and what the latency spread means for the timeout budget.
+- **TASK-012** — the full loop through the approval gate: real NVIDIA inference, then
+  **simulated** execution and verification. It records the `awaiting_approval → 409 → approve
+  → execute → verified` path, the permanent rejection path, the 8-event audit trail exactly as
+  it came back, and the guard-rail responses (`422` unknown action, `404` unknown incident).
+
+The label matters: **no run in this repository performed real remediation.** `verified` means
+the simulated action's catalog outcome met its recovery condition, not that an incident was
+resolved in the world.
 
 ## Security Principles
 
+- **Human-in-the-loop** — `high` and `critical` incidents always require an operator decision;
+  the model can add that requirement but never remove it, and no such incident executes autonomously
+- **Fail closed** — execution is denied unless the invariant `requires_approval == false OR
+  state == "approved"` holds; a rejected incident is permanently denied
+- **Audit trail** — every transition and every *refused attempt* is recorded with actor and
+  details; the store refuses to evict an unfinished incident rather than lose its trail
+- **Nothing real is touched** — the action catalog is closed, typed, and marked
+  `executes: False`. No workflow code spawns a process or opens a socket; the only outbound
+  network call in the codebase is the NVIDIA inference request in `nvidia.py`
 - **Least privilege** — Minimal permissions for each component
-- **Human-in-the-loop** — Critical actions require operator approval
-- **Audit trail** — All decisions and actions are logged
 - **Secrets management** — No credentials in source code; environment-based configuration
 - **Input validation** — All external inputs are validated and sanitized
 - **Defense in depth** — Multiple layers of security controls
+
+Known gaps, stated rather than implied: the workflow has **no authentication** (any client that
+can reach the port can approve its own incident, and every actor is recorded as `operator`), and
+its state is **in-memory only**, so an audit trail does not survive a restart. Closing both is
+follow-on work, not part of this slice.
 
 ## Repository Relationship
 

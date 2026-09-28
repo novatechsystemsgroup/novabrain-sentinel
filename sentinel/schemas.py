@@ -1,13 +1,27 @@
-"""Request and response contracts for incident analysis."""
+"""Request and response contracts for incident analysis and the approval workflow."""
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 Severity = Literal["low", "medium", "high", "critical"]
 SeverityHint = Literal["unknown", "informational", "low", "medium", "high", "critical"]
+WorkflowState = Literal[
+    "analyzed",
+    "awaiting_approval",
+    "approved",
+    "rejected",
+    "executing",
+    "verified",
+    "failed",
+]
 
 MAX_LIST_ITEMS = 12
+MAX_NOTE_CHARS = 240
+
+# The whole executable surface. Adding an entry here is the only way to make
+# Sentinel able to attempt anything, and every entry is simulated.
+ActionName = Literal["scale_api_replicas", "restart_api_service"]
 
 
 class IncidentEvent(BaseModel):
@@ -58,3 +72,59 @@ class IncidentAnalysis(BaseModel):
     status: Literal["analyzed"] = "analyzed"
     assessment: Assessment
     model: ModelInfo
+
+
+class DecisionRequest(BaseModel):
+    note: str | None = Field(default=None, max_length=MAX_NOTE_CHARS)
+
+    @field_validator("note", mode="before")
+    @classmethod
+    def _blank_is_absent(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            cleaned = value.strip()
+            if len(cleaned) > MAX_NOTE_CHARS:
+                raise ValueError(f"note must be at most {MAX_NOTE_CHARS} characters")
+            return cleaned or None
+        return value
+
+
+class ExecuteRequest(DecisionRequest):
+    action: ActionName
+
+
+class AuditEvent(BaseModel):
+    """One entry in the trail. The append order is the authoritative sequence."""
+
+    timestamp: str
+    event: str
+    actor: Literal["sentinel", "operator"]
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class ApprovalDecision(BaseModel):
+    decision: Literal["approved", "rejected"]
+    actor: Literal["operator"] = "operator"
+    decided_at: str
+    note: str | None = None
+
+
+class Verification(BaseModel):
+    """Outcome of a simulated action. The metrics are authored constants."""
+
+    status: Literal["verified", "failed"]
+    simulated: Literal[True] = True
+    before: dict[str, int | float]
+    after: dict[str, int | float]
+    success: bool
+
+
+class IncidentWorkflow(BaseModel):
+    incident_id: str
+    state: WorkflowState
+    updated_at: str
+    event: IncidentEvent
+    analysis: IncidentAnalysis
+    approval: ApprovalDecision | None = None
+    action: ActionName | None = None
+    verification: Verification | None = None
+    audit_trail: list[AuditEvent] = Field(default_factory=list)
