@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-NovaBrain Sentinel is being built as a competition entry for the NVIDIA Build Challenge. The NovaTech ecosystem already includes two relevant repositories:
+NovaBrain Sentinel is being built as a competition entry for the NVIDIA Claw Agent Challenge: London, run on NVIDIA Build model endpoints. The NovaTech ecosystem already includes two relevant repositories:
 
 - **NovaBrain** (`novatech-brain-runtime`) — Intelligence and control-plane source, providing reasoning, memory, and decision models.
 - **NovaOps** (`novaops`) — Monitoring and operational source, providing telemetry, observability, and incident data pipelines.

@@ -104,7 +104,7 @@ ingestion endpoints, an unconfigured deployment has an empty store and every
 
 ## Request timeout
 
-Live NVIDIA analyses measured **13–48 seconds** end to end, because Nemotron reasons before
+Live NVIDIA analyses measured **7–47 seconds** end to end, because Nemotron reasons before
 it returns the structured assessment. The application allows up to **90 seconds** of read
 time on the provider call (`READ_TIMEOUT` in `sentinel/nvidia.py`).
 
@@ -212,7 +212,7 @@ paste it onto the deployment's own domain and the console opens the incident the
 with `event_ingested` as the first audit event.
 
 Re-send the identical `event_id` and expect `200` with `"duplicate": true` and the **same**
-`incident_id`, answered in milliseconds rather than the 13–48 seconds a real inference takes.
+`incident_id`, answered in milliseconds rather than the 7–47 seconds a real inference takes.
 That turnaround is the proof the replay guard works and the model was not called twice. A
 `409 event_in_progress` means the first request is still mid-flight.
 

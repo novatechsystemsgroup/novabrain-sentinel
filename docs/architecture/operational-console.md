@@ -52,7 +52,7 @@ the two lists beneath it, so the disclosure survives scrolling past the panels.
 
 ## Loading state
 
-Analysis against a live reasoning model takes roughly 13–48 s, so the Run button shows a
+Analysis against a live reasoning model takes roughly 7–47 s, so the Run button shows a
 spinner, the label "NVIDIA Nemotron is assessing the incident (allow up to 90s)", and the
 elapsed whole seconds counted from the request. There is no progress percentage and no
 estimated remaining time — the client has no information the server could base one on — and the

@@ -97,7 +97,7 @@ endpoint. A failed analysis is a failed request.
 ## Latency (measured, not assumed)
 
 Live runs of the deployed image against `https://integrate.api.nvidia.com/v1` with the
-brief's example incident completed in roughly **13–48 seconds**, because the model reasons
+brief's example incident completed in roughly **7–47 seconds**, because the model reasons
 before issuing the tool call. Two of those runs are recorded in
 [`docs/evaluation/`](../evaluation/README.md).
 

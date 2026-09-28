@@ -98,7 +98,7 @@ README, not something this route quietly claims to have solved.
 
 ## Idempotency: `IdempotencyLedger`
 
-A producer that retries on a network timeout would otherwise pay for a second 13–48 s
+A producer that retries on a network timeout would otherwise pay for a second 7–47 s
 inference and create a second incident for one event. The ledger answers a single question:
 **has this `event_id` already been paid for?**
 
@@ -194,7 +194,7 @@ dismissed console does not silently reopen the incident the operator just closed
 ## Synchronous, and honest about it
 
 The route calls the model and returns. There is no Celery, no queue, no worker pool and no
-webhook callback: the producer's HTTP request is held for the **13–48 s** a live Nemotron
+webhook callback: the producer's HTTP request is held for the **7–47 s** a live Nemotron
 analysis takes (measured, see [`docs/evaluation/`](../evaluation/README.md)), with a
 `90 s` provider read timeout behind it.
 

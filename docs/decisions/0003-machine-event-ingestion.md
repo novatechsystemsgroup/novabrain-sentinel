@@ -27,7 +27,7 @@ wrong for this slice:
 2. **Does a machine get a second workflow?** Two paths through `analyze → approve → execute`
    would drift: the audit trail, the approval floor and the console would each have to be
    duplicated and kept in agreement by hand.
-3. **What does an expensive endpoint do when a producer retries?** One live analysis is 13–48 s
+3. **What does an expensive endpoint do when a producer retries?** One live analysis is 7–47 s
    of paid inference. A producer that times out at 30 s and retries is billed twice and creates
    two incidents for one event, which then shows two contradictory audit trails for one outage.
 4. **Who may call it?** The route costs money and changes state. The existing surface is

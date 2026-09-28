@@ -1,25 +1,35 @@
 # NovaBrain Sentinel
 
-**Persistent Operational AI Agent for the NVIDIA Build Challenge**
+**Event-driven operational agent for the NVIDIA Claw Agent Challenge: London**
 
-NovaBrain Sentinel is an autonomous operational agent that continuously monitors, analyzes, and responds to system events through a structured cognitive loop.
+NovaBrain Sentinel receives operational events from a monitoring system, assesses each one with a
+live NVIDIA Nemotron call, and parks anything rated `high` or `critical` behind a human approval
+gate before a response can run. It is deliberately not an incident chatbot: nobody types a
+question and reads prose back. A producer posts one event over HTTP, the model returns a
+schema-validated structured assessment, Sentinel's own deterministic policy decides whether an
+operator is required, and every step — including the attempts the policy refused — is appended to
+an audit trail. The model supplies judgement; the safety around it is plain code.
 
-## Core Loop
+**Live demo: <https://sentinel.novatechsystem.co.uk>** — no login, no setup, one page.
+**Model: `nvidia/nemotron-3.5-lightning-30b-a3b` on NVIDIA Build.**
+**Inference is real; remediation is simulated, and the console says so on screen.**
+
+## The loop, and what each stage actually does
 
 ```
 OBSERVE → UNDERSTAND → DECIDE → ACT / REQUEST APPROVAL → VERIFY → LEARN
 ```
 
-1. **OBSERVE** — Ingest telemetry, logs, metrics, and external signals
-2. **UNDERSTAND** — Classify events, detect anomalies, correlate context
-3. **DECIDE** — Evaluate response options against policies and risk
-4. **ACT / REQUEST APPROVAL** — Execute autonomous remediation or escalate to human operators
-5. **VERIFY** — Confirm outcome, measure impact, detect regressions
-6. **LEARN** — Update models, refine policies, improve future decisions
+1. **OBSERVE** — **real.** One operational event arrives over HTTP, from a machine producer or from the console form.
+2. **UNDERSTAND** — **real.** Nemotron returns severity, confidence, likely causes, recommended actions and a concise rationale, validated by pydantic.
+3. **DECIDE** — **real.** Sentinel's approval policy decides whether an operator is required — not the model.
+4. **ACT / REQUEST APPROVAL** — **gate real, action simulated.** An approved action runs against a closed two-entry catalog. No service is restarted and nothing is scaled.
+5. **VERIFY** — **simulated.** Deterministic before/after snapshots, not a measurement of anything.
+6. **LEARN** — **not implemented.** No memory, no model updates, no policy refinement.
 
 ## Status
 
-**Early implementation / Hackathon build** — Active development for the NVIDIA competition.
+**Early implementation / Hackathon build** — Active development for the NVIDIA Claw Agent Challenge: London.
 
 The repository currently contains a **deployable vertical slice**: a single FastAPI container
 that serves an **operational demo console** at `/`, a health endpoint, **bearer-token machine
@@ -310,7 +320,7 @@ Three properties worth stating precisely:
   replayed after a redeploy becomes a new incident. A duplicate arriving while its analysis is
   still running answers `409 event_in_progress`; a full ledger refuses with
   `503 ingest_ledger_full` instead of evicting an event being analysed.
-- **Synchronous.** The request is held for the whole inference (**13–48 s** measured, `90 s`
+- **Synchronous.** The request is held for the whole inference (**7–47 s** measured, `90 s`
   provider read timeout), so the caller's timeout must exceed the backend's. There is no queue,
   worker or callback: this is an idempotency-guarded door for a low event rate, not a
   high-throughput webhook receiver.
@@ -362,7 +372,7 @@ SDK, one attempt per request, no retries and no model fallback.
   filling in a plausible value.
 
 Nemotron is a reasoning model and thinks before it emits the tool call, so **live analysis
-takes roughly 13–48 seconds** end to end. The client read timeout is `90s`; the caller and
+takes roughly 7–47 seconds** end to end. The client read timeout is `90s`; the caller and
 any proxy in front of the service need to allow more than that. Measurements are in
 [`docs/evaluation/`](docs/evaluation/).
 
@@ -390,7 +400,7 @@ Four clicks, no page reload, no developer tools:
 
 | # | Click | What the page shows |
 |---|---|---|
-| 1 | **Run Demo Incident** | a spinner and real elapsed seconds while NVIDIA Nemotron assesses the prefilled incident (13–48 s), then severity, confidence, provider/model, summary, likely causes, recommended actions and the "Decision rationale" |
+| 1 | **Run Demo Incident** | a spinner and real elapsed seconds while NVIDIA Nemotron assesses the prefilled incident (7–47 s), then severity, confidence, provider/model, summary, likely causes, recommended actions and the "Decision rationale" |
 | 2 | **Attempt Execution** | `409 approval_required` rendered as *"Execution blocked by Sentinel policy — approval is required before this action can run"*, and the audit trail gains `execution_blocked`. This is the safety feature, not an error |
 | 3 | **Approve** | the ⚠ HUMAN APPROVAL REQUIRED gate closes, the decision is recorded with actor, note and timestamp |
 | 4 | **Execute** | `VERIFIED` with `Simulation: YES` and the before → after metric snapshots exactly as the backend returned them |

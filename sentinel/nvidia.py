@@ -20,7 +20,8 @@ TOOL_NAME = "submit_incident_assessment"
 
 CONNECT_TIMEOUT = 10.0
 # Nemotron-3.5-Lightning emits its reasoning before the tool call; live probes
-# measured 39-48s end to end, so the read budget has to stay well above that.
+# measured 6.7-47.1s end to end, so the read budget has to clear the slow tail
+# rather than the median.
 READ_TIMEOUT = 90.0
 WRITE_TIMEOUT = 30.0
 POOL_TIMEOUT = 10.0
