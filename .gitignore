@@ -22,14 +22,12 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Node / JavaScript
+# Lockfiles are intentionally NOT ignored: commit them for reproducible builds.
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
 
 # Build artifacts
 *.o

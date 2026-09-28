@@ -1,0 +1,25 @@
+# Keep the build context small and free of local state.
+.git
+.gitignore
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+.env.*
+!.env.example
+*.db
+*.db-shm
+*.db-wal
+*.log
+logs/
+reports/
+screenshots/
+tests/
+docs/
+Dockerfile
+.dockerignore
+README.md
+LICENSE
+requirements-dev.txt

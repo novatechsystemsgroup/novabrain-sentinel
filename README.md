@@ -21,11 +21,72 @@ OBSERVE → UNDERSTAND → DECIDE → ACT / REQUEST APPROVAL → VERIFY → LEAR
 
 **Early implementation / Hackathon build** — Active development for the NVIDIA competition.
 
+The repository currently contains a **deployable vertical slice**: a single FastAPI container that serves the landing/status page and a health endpoint. Model integration, persistence, and the agent loop itself are not implemented yet.
+
 ## Architecture
 
-> Architecture documentation will be published here as the system takes shape.
+One process, one container, no external services:
 
-See [`docs/architecture/`](docs/architecture/) for design documents.
+```
+sentinel/api.py     FastAPI app — GET /health, GET /
+static/index.html   Landing/status page (plain HTML, no build step)
+Dockerfile          python:3.13-slim, non-root UID 10001, HEALTHCHECK on /health
+requirements.txt    Fully pinned runtime dependencies
+```
+
+There is no database, cache, queue, or auth layer in this slice by design. Deeper design documents go in [`docs/architecture/`](docs/architecture/).
+
+## Local development
+
+Requires Python 3.13.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+
+uvicorn sentinel.api:app --reload
+```
+
+Then open <http://127.0.0.1:8000> for the landing page and <http://127.0.0.1:8000/health> for the health check.
+
+Run the tests:
+
+```bash
+pytest
+```
+
+### With Docker
+
+```bash
+docker build -t novabrain-sentinel .
+docker run --rm -p 8000:8000 novabrain-sentinel
+curl -s http://127.0.0.1:8000/health
+```
+
+## Configuration
+
+Copy `.env.example` to `.env` to override defaults. All variables are optional; the application has working defaults.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `SENTINEL_HOST` | `0.0.0.0` | Bind address |
+| `SENTINEL_PORT` | `8000` | Listen port |
+| `SENTINEL_LOG_LEVEL` | `info` | uvicorn log level |
+| `SENTINEL_ENV` | `production` | Deployment label |
+
+`NVIDIA_API_KEY`, `NVIDIA_BASE_URL` and `NVIDIA_MODEL` are reserved for the model-integration task and are not read by this slice. Never commit real credentials.
+
+## API
+
+| Method | Path | Response |
+|---|---|---|
+| `GET` | `/health` | `200` → `{"status":"ok","service":"novabrain-sentinel"}` |
+| `GET` | `/` | `200` → landing/status page |
+
+## Deployment
+
+Deployed as a Dockerfile-built application on Coolify. See [`docs/deployment/coolify.md`](docs/deployment/coolify.md).
 
 ## NVIDIA Model Integration
 
@@ -37,12 +98,6 @@ NovaBrain Sentinel leverages NVIDIA AI foundation models and inference endpoints
 - Automated remediation planning
 
 > Integration details will be documented as implementation progresses.
-
-## Deployment
-
-> Deployment documentation will be added as infrastructure is provisioned.
-
-See [`docs/deployment/`](docs/deployment/) for deployment guides.
 
 ## Demo
 
