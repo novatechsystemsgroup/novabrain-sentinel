@@ -147,6 +147,7 @@ emitter, not a wired integration. These are scope lines for this slice, stated r
 
 ```
 Live demo:      https://sentinel.novatechsystem.co.uk          (unauthenticated console, no login)
+Demo video:     https://youtu.be/bQLiWO1G5Mw                   (2:29, YouTube unlisted, no login)
 Health check:   https://sentinel.novatechsystem.co.uk/health
 API docs:       https://sentinel.novatechsystem.co.uk/docs
 Repository:     https://github.com/novatechsystemsgroup/novabrain-sentinel   (public, MIT)
@@ -168,6 +169,11 @@ Evidence:       docs/submission/evidence-matrix.md
 | Impact | **127** | 100–150 | within |
 | What is real vs simulated | **131** | — | paste as-is |
 | Known limitations | **160** | — | paste as-is |
-| Links | **22** | — | paste as-is |
+| Links | **30** | — | paste as-is |
 
-_(counts from `len(block.split())` on the fenced text; the brief's ranges are prose budgets, and every bounded section is inside them.)_
+_(counts from `len(block.split())` on the fenced text; the brief's ranges are prose budgets, and every
+bounded section is inside them.)_
+
+_Re-measured on 2026-09-29 after the demo video line was added to the Links block: it went from 22 to
+**30** words. Every other section above is unchanged from the TASK-015 measurement, and the seven
+bounded prose sections are still inside the brief's ranges._

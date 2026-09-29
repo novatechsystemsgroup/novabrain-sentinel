@@ -9,7 +9,7 @@ about 90 seconds — no curl, no Postman, no API token, no local setup, no Docke
 | **Live demo** | <https://sentinel.novatechsystem.co.uk> — no login |
 | **Source** | <https://github.com/novatechsystemsgroup/novabrain-sentinel> (MIT, public) |
 | **Model** | `nvidia/nemotron-3.5-lightning-30b-a3b` on NVIDIA Build (`https://integrate.api.nvidia.com/v1`) |
-| **Demo video** | `<ADD FINAL VIDEO URL BEFORE SUBMISSION>` |
+| **Demo video** | <https://youtu.be/bQLiWO1G5Mw> — 2:29, YouTube, unlisted, no login |
 | **Health** | <https://sentinel.novatechsystem.co.uk/health> |
 
 ## The 30-second summary
@@ -115,6 +115,11 @@ variables) with a token you choose, then use the stdlib emitter:
 # same event_id again → 200 duplicate:true, same incident_id, and no second model call
 ```
 
+That whole sequence — producer command, `201`, the same incident opening in the browser through
+`/?incident=<id>`, and the replay answering `duplicate: true` — is the part the demo walkthrough
+films, so you can watch the machine path before you decide to run it yourself:
+**<https://youtu.be/bQLiWO1G5Mw>** (2:29, YouTube unlisted, no login).
+
 That path starts its audit trail one event earlier: `Operational event ingested` then
 `Incident analyzed` — eight entries for a full loop instead of seven. The producer payload
 (`source`, `event_type`, `title`, `description`, `severity_hint`, `evidence[]`) is a
@@ -199,7 +204,7 @@ Stated plainly, because a claim without a boundary is not evidence.
 
 - Live demo: <https://sentinel.novatechsystem.co.uk>
 - Source: <https://github.com/novatechsystemsgroup/novabrain-sentinel>
-- Demo video: `<ADD FINAL VIDEO URL BEFORE SUBMISSION>`
+- Demo video: <https://youtu.be/bQLiWO1G5Mw> (2:29, YouTube, unlisted — plays without signing in)
 - Health: <https://sentinel.novatechsystem.co.uk/health>
 - [README](../../README.md) · [evidence matrix](evidence-matrix.md) ·
   [repeatable walkthrough](demo-scenario.md) · [project status](status.md)

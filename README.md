@@ -11,6 +11,7 @@ operator is required, and every step — including the attempts the policy refus
 an audit trail. The model supplies judgement; the safety around it is plain code.
 
 **Live demo: <https://sentinel.novatechsystem.co.uk>** — no login, no setup, one page.
+**Demo video: <https://youtu.be/bQLiWO1G5Mw>** — 2:29, no login.
 **Model: `nvidia/nemotron-3.5-lightning-30b-a3b` on NVIDIA Build.**
 **Inference is real; remediation is simulated, and the console says so on screen.**
 

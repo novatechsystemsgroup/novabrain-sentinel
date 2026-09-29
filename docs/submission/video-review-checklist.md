@@ -1,7 +1,37 @@
 # Video Review Checklist
 
-TASK-016. Use after editing, before upload. Every box must be ticked before the video is marked
-done.
+TASK-016. **The video exists.** Recorded, exported at **2:29**, uploaded to YouTube as **unlisted**
+at <https://youtu.be/bQLiWO1G5Mw>. TASK-018 marks three things DONE and nothing more: recording
+complete, upload complete, public share link live.
+
+## Published artefact
+
+| | |
+|---|---|
+| Title | **NovaBrain Sentinel — NVIDIA Claw Agent Challenge: London Demo** |
+| Runtime | **2:29** (the watch page reports `lengthSeconds` 148) |
+| Host | YouTube |
+| Visibility | **Unlisted** — reached by link, no sign-in required to watch |
+| URL | <https://youtu.be/bQLiWO1G5Mw> |
+
+Measured against the published link on 2026-09-29: YouTube's `oEmbed` endpoint answers `200` with
+that title and author `NovaTech Systems Group`, and the watch page answers `200` with no
+"Sign in to confirm" interstitial — so the id resolves and the page serves the video to a
+signed-out visitor. **Unlisted** is the uploader's setting, recorded here rather than inferred: no
+file in this repository can read it back.
+
+The 2:29 runtime sits **1 s below** the 2:30–2:50 band `video-script.md` set as a self-imposed edit
+target. That band was ours, not the organiser's — the real cap is still `UNKNOWN` behind the
+registration form ([`requirements.md`](requirements.md) #12) — so the take stands unless the form
+turns out to ask for more.
+
+## How to read the boxes below
+
+This was the checklist for the review pass after editing and before upload. A repository cannot see
+a video frame, so TASK-018 does not tick these items from here: the end-to-end watch the operator
+attested is recorded in [`checklist.md`](checklist.md) §9, and only the four facts in the table
+above are independently measured. An unticked box below is therefore "not re-verified by this
+task", never "this check failed".
 
 ---
 

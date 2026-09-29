@@ -37,6 +37,22 @@ as plain words, the command line itself would be one of the lines counted, and t
 each time this file was edited — the exact trap an earlier revision fell into by quoting **102** for a
 sweep that included it.
 
+**Re-run at TASK-018 (2026-09-29), read-only.** Four submission files have joined the set since this
+page was written (`recording-runbook.md`, `narration-cheatsheet.md` and `video-review-checklist.md`
+in TASK-016, `JUDGE-QUICKSTART.md` in TASK-017) and ten documents were edited in TASK-018, so the
+counts typed above are a **TASK-015A snapshot** and this paragraph is the current measurement of the
+same sweeps: the tree is **52 tracked files, 0 untracked**, the scan set is **51 files / 488,047
+bytes**, step 2b prints **`mentions=94`**, and step 2d prints **13 lines across 7 files** — the two
+additions are `docs/submission/recording-runbook.md:72` and `:80`, both prose instructions whose value
+position holds an ellipsis or an angle-bracket placeholder, not a credential. Step 5 is unchanged at
+`test_=135 separators=33 inc_=23 prose=2 total=193`. What did not move is every conclusion: the
+hard-format sweep prints **nothing** (grep exit `1`) over the scan set, `git log --all -p` still
+matches **0** added lines, no `.env` exists in the tree or in any commit, and the shipped-file guard
+(`tests/test_ingest.py::test_no_credential_shaped_text_in_shipped_files`) passes inside the suite. A
+judge re-deriving a figure from the tables or the command block should expect this paragraph's
+numbers, not the snapshot's — the tables and the *Observed* line below them are records of the tree
+as TASK-015A left it, and this paragraph is what the same commands print on this one.
+
 ## What was scanned
 
 | Surface | Method | Result |

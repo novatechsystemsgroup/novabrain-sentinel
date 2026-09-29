@@ -1,6 +1,6 @@
 # Project Status — NovaBrain Sentinel
 
-Last updated **2026-09-29**, during TASK-017 (judge quickstart and submission polish). The
+Last updated **2026-09-29**, during TASK-018 (final video URL and submission readiness). The
 redeploy it had been waiting on has since landed, so the deployment rows below are stated as
 measured rather than pending. This file is the roadmap in
 one page: what is finished and evidenced, what is deliberately not built, and what is left before
@@ -36,7 +36,7 @@ It is not a production SRE platform and does not claim to be one.
 | — | Coolify redeploy so production serves the corrected copy | **DONE** | closed in TASK-017 by measurement, not by a deploy log: the two earlier rows said a redeploy was outstanding, and it has since landed. `checklist.md` §2 and §11 carry the hashes. |
 | TASK-016 | Recording preparation: step-by-step runbook, narration cheat sheet, post-recording review checklist | **DONE** | `recording-runbook.md`, `narration-cheatsheet.md`, `video-review-checklist.md` |
 | TASK-017 | Judge-facing entry point: 90-second browser walkthrough, real/simulated table, machine path without a shared secret, limitations, README link, repository description | **DONE** | `JUDGE-QUICKSTART.md`, `README.md` (one line above the fold), GitHub description read back |
-| — | Record, review and publish the demo video | **NEXT** | `video-script.md`, `video-shot-list.md` |
+| TASK-018 | Record, review and publish the demo video | **DONE** (the entry is not) | <https://youtu.be/bQLiWO1G5Mw> — "NovaBrain Sentinel — NVIDIA Claw Agent Challenge: London Demo", 2:29, YouTube, unlisted. `oEmbed` returns that title with author `NovaTech Systems Group` and the watch page serves `200`, `lengthSeconds` 148, with 0 hits for the sign-in interstitial; the end-to-end watch is the operator's attestation, not a repository measurement. `video-review-checklist.md` and `checklist.md` §9 hold the detail. |
 | — | Fill and submit the Airtable entry form | **NEXT — deadline 2026-10-02 23:59 PST** | `requirements.md` #1, #5 |
 | — | Final pre-submit smoke test on the public URL | **NEXT** | `checklist.md` §11 |
 
@@ -81,8 +81,10 @@ hiding the stage.
 Closed since: the **repository description** that used to sit on this list is no longer open. TASK-017
 set it through the GitHub API to "Event-driven operational agent — NVIDIA Claw Agent Challenge:
 London" and read the value back; visibility and settings were not touched. It is a site-level field
-rather than a file, so nothing in this tree can keep it that way — re-check it before the video's last
-frame.
+rather than a file, so nothing in this tree can keep it that way — re-check it on the day the form is
+filled. The video's last frame has already been recorded, so the window for catching it on camera has
+passed; TASK-018 re-read the value on 2026-09-29 and it is still exactly that string, with visibility
+still `public`.
 
 ## If work resumes after submission
 

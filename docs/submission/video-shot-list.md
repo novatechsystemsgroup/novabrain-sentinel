@@ -5,6 +5,10 @@ TASK-015 §6. Pairs with [`video-script.md`](video-script.md) (narration) and
 order**, so `S01…S16` also run in timecode order (`S14b` sits inside the S14 window); the `step`
 each refers to is a row of the demo-scenario table.
 
+The timecodes below are the **edit plan**, written before the take existed. The exported video is
+2:29, so `S15`/`S16` land in its closing seconds; the published artefact and how it was verified are
+in [`video-review-checklist.md`](video-review-checklist.md).
+
 Recording setup for every browser shot: 1440 × 900 viewport, zoom 100 %, DevTools closed except
 where a shot asks for it, browser chrome cropped out of the exported frame, window recording only
 (no full-desktop capture, so no bookmarks bar, no other tabs, no notification pop-ups).

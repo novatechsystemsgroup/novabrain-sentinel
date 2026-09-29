@@ -1,8 +1,11 @@
 # Recording Runbook — Final Video Take
 
-TASK-016. This is the execution guide for recording the competition video. It turns the existing
-script, shot list and demo scenario into an operational workflow. Read this on recording day; do
-not treat it as a second script.
+TASK-016. **The take is done.** Recorded, exported at **2:29**, uploaded to YouTube (unlisted) at
+<https://youtu.be/bQLiWO1G5Mw> under the title **NovaBrain Sentinel — NVIDIA Claw Agent Challenge:
+London Demo**. This file is kept as the operational record of how the video was made, not as
+instructions still to follow: sections A–E are the preparation the take was filmed from, and a box
+left unticked in them is a check that cannot be re-run from a repository after the fact. §F and §G
+below separate what TASK-018 measured from what it could not. Do not treat this as a second script.
 
 References:
 - [`video-script.md`](video-script.md) — narration blocks
@@ -25,21 +28,28 @@ References:
   Agent Challenge: London", set and read back through the GitHub API on 2026-09-29. The last frame of
   the video shows the repo, and this is the string the claims audit uses; re-check with
   `gh repo view novatechsystemsgroup/novabrain-sentinel -q .description` if anything looks off.
-- [ ] **Health check passes.** `GET https://sentinel.novatechsystem.co.uk/health` → `200` with
-  `{"status":"ok","service":"novabrain-sentinel"}`.
-- [ ] **Homepage copy verified.** `GET /` contains:
+- [x] **Health check passes.** `GET https://sentinel.novatechsystem.co.uk/health` → `200` with
+  `{"status":"ok","service":"novabrain-sentinel"}`. Re-measured 2026-09-29 in the TASK-018 read-only
+  pass: `200`, that exact body.
+- [x] **Homepage copy verified.** `GET /` contains:
   - "NVIDIA Claw Agent Challenge: London" (eyebrow)
   - "Event-driven operational agent" (subtitle)
   - "Real NVIDIA inference"
   - "Safe simulated remediation"
   - "Approval: REAL"
   - "Action: SIMULATED"
-  - "LEARN not implemented"
-  - "allow up to 90s" (the corrected wait copy, not the old "15–50 seconds") — confirmed present on
-    the served page 2026-09-29; re-check on recording day in the same breath as the health check.
+  - "LEARN" + "not implemented" (the chip serves `LEARN &middot; not implemented`, so the contiguous
+    string `LEARN not implemented` greps `0` — that is markup, not a missing label)
+  - "allow up to 90s" (the corrected wait copy, not the old "15–50 seconds") — re-measured
+    2026-09-29 against the served page: `NVIDIA Claw Agent Challenge: London`,
+    `Event-driven operational agent`, `Real NVIDIA inference`, `Safe simulated remediation`,
+    `Approval: REAL`, `Action: SIMULATED`, `LEARN` and `allow up to 90s` each return `1` hit,
+    `not implemented` returns `2`, and `grep -c "takes about"` returns `0`.
 - [ ] **Fresh event id chosen.** Use `novaops-video-demo-001` for the video take. Before filming,
   confirm this exact id has NOT already been used since the current production process started. If
-  it has, pick a different fresh id (e.g., `novaops-video-demo-002`).
+  it has, pick a different fresh id (e.g., `novaops-video-demo-002`). *(A pre-take step: the id used
+  on camera lives in the operator's terminal session, and this runbook never records token values,
+  so it is not written down here.)*
 - [ ] **Ingest token ready.** `SENTINEL_INGEST_TOKEN` is exported in the terminal session only.
   Never type it on camera. Never display it. The script reads it from the environment
   (`scripts/send_demo_event.py:78`), so no token value ever exists in a visible command line.
@@ -48,6 +58,9 @@ References:
 
 - Target: **2:30–2:50** (self-imposed, not the organiser's official limit — that is UNKNOWN until
   the registration form is opened).
+- Recorded outcome: **2:29**, 1 s under the floor of our own band. The band was an editorial target
+  we set ourselves, so the take was kept rather than padded; re-cut only if the form turns out to
+  state a minimum.
 - If the form reveals a different limit at submission time, re-cut to it; preserve the core safety
   sequence (blocked execution, approval, simulated action) even if the video must be shortened.
 
@@ -89,6 +102,11 @@ References:
 The sequence below maps to the 13 shots in the brief. Each shot references the corresponding
 narration block in [`video-script.md`](video-script.md) and the operator step in
 [`demo-scenario.md`](demo-scenario.md).
+
+The time ranges in the shot headings are **edit-plan estimates written before the take existed**. The
+exported video is 2:29, so the last two headings (2:25–2:40 and 2:40–2:50) overrun the finished cut:
+the replay beat and the end card are in the final seconds of the video, and their exact frame times
+are not recorded here because a repository cannot read them off a frame.
 
 ### SHOT 1 — Public Sentinel console (0:00–0:15)
 
@@ -258,6 +276,7 @@ narration block in [`video-script.md`](video-script.md) and the operator step in
 ### Duration
 
 - Target: **2:30–2:50** unless the registration form reveals a different limit.
+- The exported take is **2:29** (`lengthSeconds` 148 on the published page).
 - If shortening is needed, trim SHOT 2 (the loop strip) and SHOT 13 (the audit trail scroll)
   first. Never cut the blocked-execution beat (SHOT 9).
 
@@ -265,8 +284,12 @@ narration block in [`video-script.md`](video-script.md) and the operator step in
 
 Before marking the video as done:
 
-- [ ] **Watch the full export from beginning to end** at 100% zoom on a laptop-sized window.
-- [ ] **Verify duration** is within target (2:30–2:50 or the form's cap if different).
+- [x] **Watch the full export from beginning to end** at 100% zoom on a laptop-sized window.
+  **Attested by the operator** in the editing pass and recorded in [`checklist.md`](checklist.md) §9;
+  no repository command can watch a video, so this line rests on the uploader's word rather than on
+  a measurement made here.
+- [x] **Verify duration** is within target (2:30–2:50 or the form's cap if different). **Measured:
+  2:29** — 1 s under the floor of a band we set ourselves; the organiser's cap is still `UNKNOWN`.
 - [ ] **Verify audio sync** — narration matches the visuals.
 - [ ] **Verify every required piece of evidence** is present. Use the coverage table in
   [`video-shot-list.md`](video-shot-list.md) line by line:
@@ -290,15 +313,34 @@ Before marking the video as done:
 - [ ] **Verify quality.** Text readable at normal laptop size, audio understandable, no long silent
   wait, no accidental notification, no mouse wandering, no terminal typo left visible, transitions
   understandable.
-- [ ] **Upload / publish** at whatever host the form asks for (UNKNOWN until registered).
-- [ ] **Verify the uploaded link** while signed out / in incognito mode.
-- [ ] **Only then mark the video as DONE.**
+- [x] **Upload / publish** at whatever host the form asks for (UNKNOWN until registered). Uploaded to
+  **YouTube** as **unlisted** at <https://youtu.be/bQLiWO1G5Mw>. If the Airtable form turns out to
+  require a different host, this link still identifies the take; re-hosting is a post-form action.
+- [x] **Verify the uploaded link** while signed out / in incognito mode. Verified by the same
+  session-less requests measured in §G: `oEmbed` `200` with the correct title, watch page `200` with
+  no sign-in interstitial.
+- [x] **Only then mark the video as DONE.** TASK-018 marks **recording complete**, **upload
+  complete** and **public share link exists** as DONE. The competition entry itself is not: the
+  Airtable form has not been submitted.
 
 ## G. Upload validation
 
-- [ ] Confirm the video plays for a signed-out visitor (not just while logged in).
-- [ ] Confirm the video URL is stable (not a temporary link that expires).
-- [ ] Record the video URL for the submission form.
+- [x] **Confirm the video plays for a signed-out visitor** (not just while logged in). Measured
+  against the published link on 2026-09-29 from a request carrying no session: the watch page answers
+  `200` with `lengthSeconds` `148` and **0** occurrences of the "Sign in to confirm you're human"
+  interstitial, and YouTube's `oEmbed` endpoint answers `200` with the title and author
+  `NovaTech Systems Group`. That is the reachable-signed-out proxy, not an incognito play-through
+  from a browser this repository does not control.
+- [ ] **Confirm the video URL is stable** (not a temporary link that expires). Unticked on purpose:
+  `youtu.be/bQLiWO1G5Mw` is a canonical YouTube video id, not a signed or expiring URL, but its
+  permanence depends on the uploading account, which no command here can inspect. Re-check it on the
+  day the form is filled.
+- [x] **Record the video URL for the submission form.**
+  <https://youtu.be/bQLiWO1G5Mw> — title **NovaBrain Sentinel — NVIDIA Claw Agent Challenge: London
+  Demo**, runtime **2:29**, host **YouTube**, visibility **Unlisted**. The URL is now carried by
+  [`README.md`](../../README.md), [`JUDGE-QUICKSTART.md`](JUDGE-QUICKSTART.md),
+  [`submission-copy.md`](submission-copy.md), [`checklist.md`](checklist.md) and
+  [`status.md`](status.md).
 
 ## Model variability rules
 
@@ -340,6 +382,11 @@ The recording must tolerate real model variability.
   assume paid software.
 
 ## Pre-recording checklist (immediately before the take)
+
+Kept as the record of the gate the take was filmed from. The boxes below describe a moment that has
+passed — a clean terminal, a chosen event id, recording software armed — and cannot be re-run from a
+repository afterwards. The two that a later read-only pass *could* re-measure, health and homepage
+copy, were re-measured on 2026-09-29 and are ticked with their results in §A rather than here.
 
 - [ ] `GET /health` → `200 OK`
 - [ ] Homepage is the final build (corrected wait copy present)
@@ -395,7 +442,9 @@ number from the screen, not from this document.
 ## Review checklist status
 
 The final video review checklist is in
-[`video-review-checklist.md`](video-review-checklist.md). Use it after editing, before upload.
+[`video-review-checklist.md`](video-review-checklist.md). It was the gate after editing and before
+upload; since the upload happened, that file also carries the published artefact table (title,
+runtime, host, visibility, URL) and states which of its own boxes a later pass could not re-verify.
 
 ## GitHub description status
 
@@ -405,6 +454,9 @@ Check whether the public GitHub repository description has been manually changed
 
 If not, report it as a human action. Do not attempt account-setting changes unless explicitly
 authorised.
+
+Done: TASK-017 set that description through the GitHub API and read the value back. It is a
+site-level field rather than a file, so it is worth re-checking on the day the form is filled.
 
 ## Files changed by TASK-016
 

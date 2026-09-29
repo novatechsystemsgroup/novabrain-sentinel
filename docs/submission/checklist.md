@@ -5,8 +5,10 @@ right now, **MANUAL ACTION REQUIRED** means a human has to act outside the code,
 something we cannot close from here, **UNKNOWN** means the organiser has not published the rule so
 we refuse to guess it.
 
-Nothing in the Video or Submission-form sections is checked, because neither has happened. A
-checkbox on those lines would be a claim with no evidence behind it.
+The Video section is checked for the three things TASK-018 was given leave to mark: recording
+complete, upload complete, a public share link that resolves. The Submission-form section is **not**
+checked, because the form has not been filled — a checkbox there would be a claim with no evidence
+behind it.
 
 State as of 2026-09-29, written against the code tree at `34e4053`. The submission pack — 12 new
 files under `docs/submission/` plus the README and `docs/evaluation/README.md` updates — commits on
@@ -16,8 +18,8 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
 **Production serves this tree's copy.** TASK-015A changed one line of `static/index.html` (the
 empty-state wait copy, §3) and deployed nothing — the brief forbids it. Re-measured 2026-09-29 at
 `16d20e6`: the served `GET /`, `/static/app.js` and `/static/styles.css` hash byte-for-byte the same
-as the tree (`256ef8b0…`, `5882a5f2…`, `79254759…`), so the corrected wording is live, the video can
-be recorded against the public URL, and **no redeploy is outstanding**. How the deploy happened is
+as the tree (`256ef8b0…`, `5882a5f2…`, `79254759…`), so the corrected wording is live, and the video
+was recorded against the public URL with **no redeploy outstanding**. How the deploy happened is
 not recorded anywhere in the repository, because no webhook is configured
 (`docs/deployment/coolify.md` documents manual deploys); the served bytes are the evidence.
 
@@ -37,7 +39,9 @@ not recorded anywhere in the repository, because no webhook is configured
   registering; if any of these fails, nothing else in this checklist matters.
 - [ ] **UNKNOWN** — Real video length cap, prescribed form fields, screenshot/diagram requirement,
   mandated model or NIM, team-size and originality clauses. All sit behind the registration form.
-  Read them after registering and re-cut only if our self-imposed 2:30–2:50 target was wrong.
+  Read them after registering and re-cut only if our self-imposed 2:30–2:50 target was wrong. The
+  exported take is **2:29**, 1 s under the floor of that band, so a stated minimum below 2:29 costs
+  nothing and a stated minimum above it costs a re-cut.
 
 ## 2. Repository
 
@@ -71,8 +75,9 @@ not recorded anywhere in the repository, because no webhook is configured
   `gh repo view novatechsystemsgroup/novabrain-sentinel -q .description`. Visibility stayed public and
   no other setting was touched. It contradicted the claim the audit removed from the code (durability
   is per-process memory: `workflow.py:240`, `ingestion.py:140`), which is why it had to change before
-  the video's last frame. → `claims-audit.md`, *REMOVE* section. Because the value lives outside the
-  repository, no commit can keep it correct: re-check it on recording day.
+  the video's last frame → `claims-audit.md`, *REMOVE* section. That frame has now been recorded, and
+  because the value lives outside the repository no commit can keep it correct: re-check it on the day
+  the form is filled.
 
 ## 3. Live demo URL
 
@@ -260,11 +265,20 @@ not recorded anywhere in the repository, because no webhook is configured
   inference. Safe simulated remediation."** out loud.
 - [x] Shot list written: 17 shots in edit order, 11 required visible-evidence items mapped,
   legibility rule ("record wide, then punch in"), fallback per shot.
-- [ ] **Record the video.** Not started. Nothing here is done until a file exists.
-- [ ] **Watch it end to end** at 100 % zoom on a laptop-sized window, confirming the coverage table
-  in `video-shot-list.md` line by line.
-- [ ] **Upload / publish** at whatever host the form asks for (UNKNOWN until registered), then
-  confirm the link plays for a signed-out visitor.
+- [x] **Record the video.** **DONE** — recorded, reviewed and exported. Duration **2:29**, which is
+  1 s under the floor of the 2:30–2:50 band above; that band was our editorial target, not a
+  published rule (`requirements.md` #12 still has the real cap as `UNKNOWN`).
+- [x] **Watch it end to end** at 100 % zoom on a laptop-sized window, confirming the coverage table
+  in `video-shot-list.md` line by line. **DONE — attested by the operator** during the editing pass.
+  A repository cannot see a video frame, so this line is a recorded human attestation rather than a
+  measurement made here, and `video-review-checklist.md` keeps its per-item boxes unticked for the
+  same reason.
+- [x] **Upload / publish.** **DONE** — hosted on **YouTube**, visibility **unlisted**, title **“NovaBrain
+  Sentinel — NVIDIA Claw Agent Challenge: London Demo”**, at <https://youtu.be/bQLiWO1G5Mw>. The link
+  resolves for a request carrying no session: `oEmbed` returns `200` with that title and author
+  `NovaTech Systems Group`, and the watch page returns `200` with `lengthSeconds` `148` and **0**
+  occurrences of the "Sign in to confirm" interstitial. Visibility is the uploader's setting, recorded
+  as stated; nothing in this tree can read it back.
 - [ ] Re-cut **only if** the published cap turns out to differ from our target.
 
 ## 10. Submission form
@@ -278,20 +292,26 @@ not recorded anywhere in the repository, because no webhook is configured
 - [ ] Final pre-submit read: does any sentence promise more than `claims-audit.md` supports?
 - [ ] **Submit**, then record the timestamp. Deadline **2026-10-02 23:59 PST**.
 
-## 11. Final smoke test before recording
+## 11. Final smoke test before submitting
 
 Production serves the code in this tree, including the `static/index.html:124` wording TASK-015A
 changed — the deploy that carries it has happened, measured 2026-09-29 against `16d20e6` by hashing
 the three served `static/` files against the committed ones. All items below were therefore run
-against the live page; the cold console run is what a recording day still owes.
+against the live page. The video has since been recorded against that same URL, and the one line
+still open here — the cold console run — stays open by policy, not by oversight: TASK-018 forbids
+production inference, so no command in this pass can create the run it asks for.
 
 - [x] `GET /` 200, rendering `Event-driven operational agent` with the London eyebrow; **0** hits for
   either retired string.
-- [x] `/health` → `{"status":"ok","service":"novabrain-sentinel"}`.
+- [x] `/health` → `{"status":"ok","service":"novabrain-sentinel"}`. Re-measured in the TASK-018
+  read-only pass: `200` with that exact body.
 - [ ] One cold console run: *Run Demo Incident* → `high` → gate → refuse → approve → execute →
   `VERIFIED`. §3 records the live console QA already done (both viewports, 0 JS errors, the
-  deliberate blocked attempt); this line is the fresh end-to-end take on recording day, so the
-  narration is describing what happened minutes earlier.
+  deliberate blocked attempt). `recording-runbook.md` §D films the demo through the producer path and
+  then the console panels, so what this line still wants is the console's own *Run Demo Incident*
+  button driven once, live, immediately before the form is submitted — a MANUAL action requiring no
+  token (the console route is unauthenticated by design), and not something this documentation pass
+  may trigger.
 - [x] One machine run against the public URL: `201`, open `/?incident=<id>`, replay → `200
   duplicate:true` with the same incident id. **Done** — §3 records the transcript of the run made
   with the deployed `SENTINEL_INGEST_TOKEN` (`novaops-public-demo-001` →
@@ -308,7 +328,7 @@ against the live page; the cold console run is what a recording day still owes.
   "allow up to 90s" with **0** hits for the retired `takes about` range. Measured on the served page
   2026-09-29: `grep -c 'allow up to 90s'` → `1`, `grep -c 'takes about'` → `0`, and the whole file
   hashes the same as `static/index.html` in the tree. The recording-day fallback of running a
-  container locally is no longer needed, so the video is made against the public URL.
+  container locally was not needed, so the video was made against the public URL.
 
 ## Blocked
 
