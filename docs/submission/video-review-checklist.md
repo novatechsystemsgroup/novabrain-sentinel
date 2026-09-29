@@ -9,7 +9,7 @@ complete, upload complete, public share link live.
 | | |
 |---|---|
 | Title | **NovaBrain Sentinel — NVIDIA Claw Agent Challenge: London Demo** |
-| Runtime | **2:29** (the watch page reports `lengthSeconds` 148) |
+| Runtime | **2:29** as the uploader states it. The published page is a second shorter: its `approxDurationMs` values read `147999`, `148021` and `148050` ms, and its two `lengthSeconds` fields disagree with each other — `148` in `videoDetails`, `149` in the microformat — so every read but the microformat's lands on **2:28**. This pack quotes the uploader's figure and names the spread wherever a measurement is claimed. |
 | Host | YouTube |
 | Visibility | **Unlisted** — reached by link, no sign-in required to watch |
 | URL | <https://youtu.be/bQLiWO1G5Mw> |
@@ -20,10 +20,13 @@ that title and author `NovaTech Systems Group`, and the watch page answers `200`
 signed-out visitor. **Unlisted** is the uploader's setting, recorded here rather than inferred: no
 file in this repository can read it back.
 
-The 2:29 runtime sits **1 s below** the 2:30–2:50 band `video-script.md` set as a self-imposed edit
-target. That band was ours, not the organiser's — the real cap is still `UNKNOWN` behind the
-registration form ([`requirements.md`](requirements.md) #12) — so the take stands unless the form
-turns out to ask for more.
+That runtime sits **1–2 s below** the floor of the 2:30–2:50 band `video-script.md` set as a
+self-imposed edit target (150 s against the 147.999–148.050 s the page serves, or against the 149 s
+its microformat claims). That band was ours, not the organiser's — the real cap is still `UNKNOWN`
+behind the registration form ([`requirements.md`](requirements.md) #12) — so the take stands unless
+the form turns out to ask for more, and the same 1–2 s spread applies to every "how far under the
+floor" line in this pack. If the form states a minimum, treat the shorter read (2:28) as the safe
+figure when deciding whether a re-cut is needed.
 
 ## How to read the boxes below
 

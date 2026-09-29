@@ -58,9 +58,11 @@ References:
 
 - Target: **2:30–2:50** (self-imposed, not the organiser's official limit — that is UNKNOWN until
   the registration form is opened).
-- Recorded outcome: **2:29**, 1 s under the floor of our own band. The band was an editorial target
-  we set ourselves, so the take was kept rather than padded; re-cut only if the form turns out to
-  state a minimum.
+- Recorded outcome: **2:29** as the uploader states it, which sits 1–2 s under the floor of our own
+  band (the published page's duration fields read about 148 s; see
+  [`video-review-checklist.md`](video-review-checklist.md) for the reading). The band was an editorial
+  target we set ourselves, so the take was kept rather than padded; re-cut only if the form turns out
+  to state a minimum.
 - If the form reveals a different limit at submission time, re-cut to it; preserve the core safety
   sequence (blocked execution, approval, simulated action) even if the video must be shortened.
 
@@ -276,7 +278,10 @@ are not recorded here because a repository cannot read them off a frame.
 ### Duration
 
 - Target: **2:30–2:50** unless the registration form reveals a different limit.
-- The exported take is **2:29** (`lengthSeconds` 148 on the published page).
+- The exported take is **2:29** as the uploader states it. The published page is a second shorter —
+  its duration fields read 147,999–148,050 ms and its two `lengthSeconds` values are 148 and 149 —
+  so the same cut reads as 2:28 or 2:29 depending on which one you open
+  ([`video-review-checklist.md`](video-review-checklist.md) holds the measurement).
 - If shortening is needed, trim SHOT 2 (the loop strip) and SHOT 13 (the audit trail scroll)
   first. Never cut the blocked-execution beat (SHOT 9).
 
@@ -289,7 +294,8 @@ Before marking the video as done:
   no repository command can watch a video, so this line rests on the uploader's word rather than on
   a measurement made here.
 - [x] **Verify duration** is within target (2:30–2:50 or the form's cap if different). **Measured:
-  2:29** — 1 s under the floor of a band we set ourselves; the organiser's cap is still `UNKNOWN`.
+  2:29** as the uploader states it — 1–2 s under the floor of a band we set ourselves, with the
+  organiser's cap still `UNKNOWN`.
 - [ ] **Verify audio sync** — narration matches the visuals.
 - [ ] **Verify every required piece of evidence** is present. Use the coverage table in
   [`video-shot-list.md`](video-shot-list.md) line by line:
@@ -327,10 +333,10 @@ Before marking the video as done:
 
 - [x] **Confirm the video plays for a signed-out visitor** (not just while logged in). Measured
   against the published link on 2026-09-29 from a request carrying no session: the watch page answers
-  `200` with `lengthSeconds` `148` and **0** occurrences of the "Sign in to confirm you're human"
-  interstitial, and YouTube's `oEmbed` endpoint answers `200` with the title and author
-  `NovaTech Systems Group`. That is the reachable-signed-out proxy, not an incognito play-through
-  from a browser this repository does not control.
+  `200`, serves a player whose payload carries `"videoId":"bQLiWO1G5Mw"`, and returns **0**
+  occurrences of the "Sign in to confirm you're human" interstitial, and YouTube's `oEmbed` endpoint
+  answers `200` with the title and author `NovaTech Systems Group`. That is the reachable-signed-out
+  proxy, not an incognito play-through from a browser this repository does not control.
 - [ ] **Confirm the video URL is stable** (not a temporary link that expires). Unticked on purpose:
   `youtu.be/bQLiWO1G5Mw` is a canonical YouTube video id, not a signed or expiring URL, but its
   permanence depends on the uploading account, which no command here can inspect. Re-check it on the

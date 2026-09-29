@@ -15,9 +15,11 @@ in [`requirements.md`](requirements.md) row 12. So:
 - Do not state a hard limit on screen or in the submission form until the rule is verified.
 - If the form imposes one at submission time, re-cut to it; the block order below survives
   shrinking by trimming blocks 2 and 9 first, never by cutting the blocked-execution beat.
-- **Recorded outcome: the exported take is 2:29**, 1 s under the floor of the band this file set.
-  Kept rather than padded, because the band is ours and the organiser's cap is still `UNKNOWN`; the
-  published link and how it was verified are in [`video-review-checklist.md`](video-review-checklist.md).
+- **Recorded outcome: the exported take is 2:29**, 1–2 s under the floor of the band this file set
+  (the published page's duration fields read about 148 s, so the shorter read is 2:28; the
+  measurement is in [`video-review-checklist.md`](video-review-checklist.md)). Kept rather than
+  padded, because the band is ours and the organiser's cap is still `UNKNOWN`; the published link and
+  how it was verified are in that same file.
 
 ## The editing rules that are not negotiable
 

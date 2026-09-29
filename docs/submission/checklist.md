@@ -40,8 +40,10 @@ not recorded anywhere in the repository, because no webhook is configured
 - [ ] **UNKNOWN** — Real video length cap, prescribed form fields, screenshot/diagram requirement,
   mandated model or NIM, team-size and originality clauses. All sit behind the registration form.
   Read them after registering and re-cut only if our self-imposed 2:30–2:50 target was wrong. The
-  exported take is **2:29**, 1 s under the floor of that band, so a stated minimum below 2:29 costs
-  nothing and a stated minimum above it costs a re-cut.
+  exported take is **2:29** as the uploader states it (the published page's own duration fields sit
+  around 148 s, which reads as 2:28, and only its microformat claims 149 s —
+  `video-review-checklist.md` holds the measurement), so a stated minimum at or below 2:28 costs
+  nothing and one above it costs a re-cut.
 
 ## 2. Repository
 
@@ -265,9 +267,10 @@ not recorded anywhere in the repository, because no webhook is configured
   inference. Safe simulated remediation."** out loud.
 - [x] Shot list written: 17 shots in edit order, 11 required visible-evidence items mapped,
   legibility rule ("record wide, then punch in"), fallback per shot.
-- [x] **Record the video.** **DONE** — recorded, reviewed and exported. Duration **2:29**, which is
-  1 s under the floor of the 2:30–2:50 band above; that band was our editorial target, not a
-  published rule (`requirements.md` #12 still has the real cap as `UNKNOWN`).
+- [x] **Record the video.** **DONE** — recorded, reviewed and exported. Duration **2:29** as stated by
+  the uploader; the published page's duration fields cluster at about 148 s, which reads as 2:28 —
+  either way the take sits 1–2 s under the floor of the 2:30–2:50 band above, and that band was our
+  editorial target, not a published rule (`requirements.md` #12 still has the real cap as `UNKNOWN`).
 - [x] **Watch it end to end** at 100 % zoom on a laptop-sized window, confirming the coverage table
   in `video-shot-list.md` line by line. **DONE — attested by the operator** during the editing pass.
   A repository cannot see a video frame, so this line is a recorded human attestation rather than a
@@ -276,8 +279,10 @@ not recorded anywhere in the repository, because no webhook is configured
 - [x] **Upload / publish.** **DONE** — hosted on **YouTube**, visibility **unlisted**, title **“NovaBrain
   Sentinel — NVIDIA Claw Agent Challenge: London Demo”**, at <https://youtu.be/bQLiWO1G5Mw>. The link
   resolves for a request carrying no session: `oEmbed` returns `200` with that title and author
-  `NovaTech Systems Group`, and the watch page returns `200` with `lengthSeconds` `148` and **0**
-  occurrences of the "Sign in to confirm" interstitial. Visibility is the uploader's setting, recorded
+  `NovaTech Systems Group`, and the watch page returns `200`, names `bQLiWO1G5Mw` in its player
+  payload, and shows **0** occurrences of the "Sign in to confirm" interstitial. Its duration fields
+  are a second short of the stated runtime (`video-review-checklist.md` holds the reading); the
+  runtime this pack quotes is the uploader's **2:29**. Visibility is the uploader's setting, recorded
   as stated; nothing in this tree can read it back.
 - [ ] Re-cut **only if** the published cap turns out to differ from our target.
 
