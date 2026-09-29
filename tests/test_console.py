@@ -14,6 +14,7 @@ import httpx
 import pytest
 
 from sentinel.api import create_app
+from sentinel.nvidia import READ_TIMEOUT
 from sentinel.schemas import (
     ActionName,
     Assessment,
@@ -502,6 +503,19 @@ def test_ui_does_not_fake_progress_or_read_hidden_reasoning():
     assert "reasoning_content" not in source
     assert not re.search(r"\bsetProgress\b|aria-valuenow", source), (
         "no fabricated completion indicator while the model is still running"
+    )
+
+
+def test_inference_wait_copy_promises_the_backend_read_budget():
+    """A measured latency band is a promise the model can break; the read
+    timeout is the only wait figure the console may quote."""
+    placeholder = re.search(r'id="a-empty">([^<]*)<', asset("index.html")).group(1)
+    assert "allow up to" in placeholder, "the wait has to be a budget, not an estimate"
+    assert f"{int(READ_TIMEOUT)}s" in placeholder, (
+        "the budget printed to judges must be the budget the client enforces"
+    )
+    assert not re.search(r"\d+\s*&ndash;\s*\d+\s*seconds", placeholder), (
+        "no measured range in the empty-state copy"
     )
 
 
