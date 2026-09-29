@@ -14,6 +14,13 @@ an audit trail. The model supplies judgement; the safety around it is plain code
 **Model: `nvidia/nemotron-3.5-lightning-30b-a3b` on NVIDIA Build.**
 **Inference is real; remediation is simulated, and the console says so on screen.**
 
+If you have two minutes: the loop below → [Demo](#demo) → [NVIDIA Model
+Integration](#nvidia-model-integration) → [Known limitations](#known-limitations). For a judge's
+path with evidence instead of adjectives:
+[`docs/submission/evidence-matrix.md`](docs/submission/evidence-matrix.md), and the exact
+walkthrough a reviewer can repeat in
+[`docs/submission/demo-scenario.md`](docs/submission/demo-scenario.md).
+
 ## The loop, and what each stage actually does
 
 ```
@@ -55,6 +62,11 @@ What is real and what is not:
 
 `recommended_actions` remain advisory text. No endpoint performs real remediation, and
 persistence (`LEARN` included) is not implemented yet — workflow state lives in the process.
+
+What is finished, what is deliberately not implemented, and what is left as manual action before
+the entry goes in: [`docs/submission/status.md`](docs/submission/status.md). The evidence behind
+every claim in the table above is in [`claims-audit.md`](docs/submission/claims-audit.md) and
+[`security-check.md`](docs/submission/security-check.md).
 
 ## Architecture
 
@@ -354,7 +366,7 @@ this slice must run as **exactly one replica** — see
 ## NVIDIA Model Integration
 
 Inference runs on **NVIDIA Build** (`https://integrate.api.nvidia.com/v1`), an
-OpenAI-compatible endpoint, using the NVIDIA open-source model
+OpenAI-compatible endpoint, using the NVIDIA model
 `nvidia/nemotron-3.5-lightning-30b-a3b`. Calls are made with `httpx` directly — no OpenAI
 SDK, one attempt per request, no retries and no model fallback.
 
@@ -437,11 +449,14 @@ resolved in the world.
 - **Audit trail** — every transition and every *refused attempt* is recorded with actor and
   details; the store refuses to evict an unfinished incident rather than lose its trail
 - **Nothing real is touched** — the action catalog is closed, typed, and marked
-  `executes: False`. No workflow code spawns a process or opens a socket; the only outbound
-  network call in the codebase is the NVIDIA inference request in `nvidia.py`
-- **Least privilege** — Minimal permissions for each component
+  `executes: False`. No workflow code spawns a process or opens a socket; the service's only
+  outbound network call is the NVIDIA inference request in `nvidia.py` (`nvidia.py:166-167`)
+- **Least privilege** — the runtime holds two secrets and no infrastructure credential of any
+  kind: it has no orchestrator, database or shell to reach, because the action catalog is two
+  in-process metric snapshots (`simulation.py:32-51`). The container runs as UID 10001
+  (`Dockerfile:24`)
 - **Console surface** — the page is locked to its own assets by a CSP on `GET /` alone
-  (`script-src 'self'`, no inline script, no CDN, no `frame-ancestors`), calls only same-origin
+  (`script-src 'self'`, no inline script, no CDN, `frame-ancestors 'none'`), calls only same-origin
   routes, and never sees the NVIDIA key, the ingest token, the provider base URL or any reasoning
   trace
 - **Ingestion guard** — `POST /api/v1/events/ingest` requires a shared bearer secret compared
@@ -451,8 +466,12 @@ resolved in the world.
 - **Secrets management** — No credentials in source code; environment-based configuration. Two
   secrets exist (`NVIDIA_API_KEY`, `SENTINEL_INGEST_TOKEN`), both runtime-only, and neither has a
   value in this repository or its docs
-- **Input validation** — All external inputs are validated and sanitized
-- **Defense in depth** — Multiple layers of security controls
+- **Input validation** — every request body is a typed pydantic model: required strings carry
+  `min_length` (`schemas.py:44-45`, `schemas.py:60-63`), the approval note is capped at 240
+  characters (`schemas.py:21`, `schemas.py:170-178`), and severity, workflow state, action name,
+  actor and decision are `Literal` allowlists (`schemas.py:8-25`). Nothing is "sanitised" — model
+  and producer strings stay strings, and the console renders them through `textContent`, never
+  `innerHTML` (`static/app.js:181`, `static/app.js:199`)
 
 Known gaps, stated rather than implied: Machine-to-machine ingestion is bearer-token protected.
 The public hackathon console remains intentionally unauthenticated — as does
@@ -467,11 +486,32 @@ follow-on work, not part of this slice.
 
 | Repository | Role |
 |---|---|
-| **NovaBrain** | Intelligence / control-plane source — reasoning, memory, decision models |
-| **NovaOps** | Monitoring / operational source — telemetry, observability, incident data |
-| **Sentinel** | Competition product — integrates reusable components from NovaBrain and NovaOps into a unified operational agent |
+| **NovaBrain** | Product-line context — reasoning, memory and decision models this slice does **not** draw on yet |
+| **NovaOps** | Monitoring/operational product whose event vocabulary this contract is modelled on — a **design reference, not a wired integration** (`docs/architecture/machine-event-ingestion.md`) |
+| **Sentinel** | Competition product — written in this repository, self-contained |
 
-Sentinel is a separate repository that selectively reuses components from NovaBrain and NovaOps after architectural audit. It is not a fork or copy of either repository.
+No component has been extracted from either repository: every file here is authored in this repo,
+and NovaOps carries no licence grant that would allow copying it. The reuse policy in
+[`docs/decisions/0001-project-bootstrap.md`](docs/decisions/0001-project-bootstrap.md) permits
+case-by-case extraction after an architectural audit; nothing has exercised that permission.
+Sentinel is not a fork or copy of either repository.
+
+## Known limitations
+
+Stated as limits, not as a roadmap. Each is a fact about the code at this commit.
+
+| Limitation | What it means when you use the demo |
+|---|---|
+| **In-memory state** | Workflow state and the idempotency ledger live in one process, bounded at 200 entries each (`workflow.py:25`, `ingestion.py:18`). A restart ends every incident and forgets which events were already paid for |
+| **One replica, required** | Two processes mean two stores: a producer can create duplicate incidents and an approval can land on a replica that never saw the incident |
+| **Authentication covers one route** | `POST /api/v1/events/ingest` is bearer-guarded by one shared secret with no rotation and no per-producer identity. The console and `POST /api/v1/incidents/analyze` are unauthenticated, so anyone who can reach the port can pay for an inference and approve their own incident; every actor is recorded as `operator` |
+| **No rate limiting** | Nothing throttles the analysis route; the only budget is the bounded store refusing new incidents at capacity (`503`) |
+| **Remediation is simulated** | The action catalog has two entries, both `executes: False` (`simulation.py:29`). Nothing is scaled or restarted |
+| **Verification is simulated** | `verified` means a catalog outcome met its recovery condition, not that a symptom cleared |
+| **`LEARN` is not implemented** | No memory, no model updates, no policy refinement |
+| **Synchronous, slow inference** | A request holds open for 7–47 s measured (read timeout 90 s, `nvidia.py:25`); no queue, no worker, no streaming |
+| **OpenAPI under-documents the guard** | `/openapi.json` does not declare the bearer requirement on the ingest route, so `/docs` shows a route the live server protects. Fixing it changes `api.py` and forces a redeploy, which this slice defers |
+| **Single-container ops** | One container, no HA, no backup — because there is no durable data to back up |
 
 ## License
 

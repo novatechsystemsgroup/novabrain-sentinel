@@ -338,9 +338,106 @@ not a second model call. The endpoint is honest about being synchronous — a pr
 at least the 90 s read timeout, and the two-replica limit still applies because both the workflow
 store and the idempotency ledger are per-process memory that a restart empties.
 
+## Submission QA — TASK-015 (2026-09-28)
+
+> **Real NVIDIA inference + safe simulated remediation — not real remediation.**
+
+Two runs, chosen to cover the two doors the submission claims: the public production URL reached
+from a browser, and the canonical machine-first event reached from `scripts/send_demo_event.py`.
+The purpose was to confirm the documented numbers still hold on the tree being submitted, not to
+add features.
+
+| | |
+|---|---|
+| Production | `https://sentinel.novatechsystem.co.uk`, one replica, console-driven run at `GET /` |
+| Local artifact | `docker build` of the working tree (`sha256:43043023…`), tag `novabrain-sentinel:task015`, 246 MB, run on `127.0.0.1:8025`, non-root UID 10001, healthcheck `healthy`, `RestartCount: 0` |
+| Provider | NVIDIA Build, live, `nvidia/nemotron-3.5-lightning-30b-a3b`; keys injected with `docker run -e NAME` at run time only |
+| Viewports | 1440 × 900 and 390 × 844 |
+
+### Timings
+
+| Measurement | Value |
+|---|---|
+| Production: *Run Demo Incident* click → `incident_analyzed` | **6.65 s** (`22:52:35.49` → `22:52:42.140992`) |
+| Production: `incident_analyzed` → `approval_requested` | 0.11 ms |
+| Local: `POST /api/v1/events/ingest` wall time (201) | **9.6 s** |
+| Local: replay of the same `event_id` (200, `duplicate: true`) | **0.02 s**, no second inference |
+| Local: whole workflow after the model answers, 5 audit appends | 164 ms (`22:47:54.465438` → `22:47:54.629636`) |
+
+The production run is the fastest end-to-end analysis measured on this project, so the documented
+band is revised from `12.8–47.1 s` to **6.7–47.1 s** across the six live runs (TASK-011: 12.8 and
+47.1 s; TASK-012: 19.3 s; TASK-013: 11 and 13.17 s; TASK-014: 11.65–21.0 s; TASK-015: 6.65 s
+production, 9.6 s machine-triggered). The `90 s` read timeout still clears the slow tail, and the
+`7–47 s` wording now used in the README and the architecture docs is that range rounded.
+
+### Canonical machine-first flow, local container
+
+`scripts/send_demo_event.py` posted `event_id: task015-evt-20260928T224744Z` with `source=novaops`,
+`event_type=ram_high`, `severity_hint=warning` and the three evidence lines:
+
+1. `HTTP 201`, `incident_id: inc_2f5ff8a508cc4af199c840b28521c61f`, `workflow_state: awaiting_approval`,
+   `duplicate: false`, `console_path: /?incident=inc_…`.
+2. The workflow record: `severity high | confidence 0.86 | requires_approval True`, model
+   `nvidia/nemotron-3.5-lightning-30b-a3b`, 3 likely causes, 4 recommended actions, and
+   `has reasoning_content? False`.
+3. Execution attempted before approval → `409 {"detail":{"error":"approval_required",…}}`.
+4. `approve` → `200 state approved`; `execute scale_api_replicas` → `200 state verified` with
+   `{"status":"verified","simulated":true,…,"success":true}` and the catalog constants
+   (`2 → 4` replicas, `2400 → 610` ms, `8.2 → 0.4` %, `0 → 0` restarts).
+5. Eight audit events in append order, starting with `event_ingested` and carrying
+   `execution_blocked` between `approval_requested` and `approval_granted`.
+6. Replaying the same `event_id` → `HTTP 200 in 0.02s`, `duplicate: True`, the **same**
+   `incident_id`, `workflow_state: verified`.
+7. A request with no token → `401 {"detail":{"error":"invalid_ingest_token",…}}` with
+   `www-authenticate: Bearer`.
+
+Opening the returned `console_path` in a browser rendered the incident with
+"Operational event ingested" as the first trail row, proving the producer → console bridge.
+The page shows human-readable labels (`Operational event ingested`); the raw audit names
+(`event_ingested`) are in the API JSON — both are correct, and a demo frame that needs the raw
+token has to come from a terminal, not the console.
+
+### Public production QA
+
+`GET /` 200 (0.177 s, 9 524 B), `/health` 200 (46 B), `/docs` 200, `/openapi.json` 200 (10 960 B),
+`GET /api/v1/events/ingest` 405, `POST` without a token 401, `POST` with a wrong token 401.
+The strict CSP is present on `GET /` only. One real inference produced
+`inc_0a0d3648688244a4ac37a1763272cbd7` → `high` / `0.87` / `requires_approval true`; the deliberate
+pre-approval attempt returned 409 and was audited; approve → execute → `verified`; the trail held
+seven events. Re-checking the rendered page afterwards: `Workflow verified`,
+`nvidia · nvidia/nemotron-3.5-lightning-30b-a3b`, the permanent disclosure
+"Real NVIDIA inference · Safe simulated remediation", `scrollWidth − clientWidth = 0` at both
+1440 px and 390 px, and **0 occurrences** for each of the eight probes: the NVIDIA key prefix
+(the prefix string exists in this repository only as a test assertion and as a scan description,
+never followed by a value — `docs/submission/security-check.md`), `integrate.api.nvidia.com`,
+`reasoning_content`, `api_key`, `NVIDIA_API_KEY`, `SENTINEL_INGEST_TOKEN`, a `Bearer ` header,
+and `authorization`.
+
+The browser console for the whole production session held exactly one line: Chrome's own
+`Failed to load resource: 409 (Conflict)` for the deliberate blocked attempt. Zero JavaScript
+errors, zero warnings — the same result as TASK-013 and TASK-014, and the same reason: any non-2xx
+fetch produces that line.
+
+### Not proven on production
+
+The `201`/replay pair was **not** exercised against the public URL. `SENTINEL_INGEST_TOKEN` is a
+runtime-only value that this QA pass cannot read, so an unauthenticated probe can prove the guard
+rejects (verified: 401 twice) but not that the guard accepts. The full machine-first loop above is
+therefore evidence from the local container built from the same tree, and the check-list item stays
+`MANUAL ACTION REQUIRED` rather than `PASS`.
+
+`/openapi.json` does not document the bearer requirement on `/api/v1/events/ingest` — zero
+occurrences of `Bearer` in the schema. Fixing it means editing `api.py`, which would require a
+redeploy to verify; TASK-015 §0 forbids changes that do not unblock the submission, so this is
+recorded as a known limitation instead, and the contract is documented in
+[`docs/architecture/machine-event-ingestion.md`](../architecture/machine-event-ingestion.md).
+
 ## Not yet measured
 
 `LEARN` is not implemented, so there is nothing to evaluate for it.
+
+Machine ingestion has not produced a `201` on the **public** URL — see *Not proven on production*
+above. It needs the deployed runtime token, which this QA pass deliberately does not read.
 
 The `failed` verification path is deterministic and covered by tests (`restart_api_service` on
 a `critical` incident does not recover it, so `state: "failed"` and `after == before`), but it
