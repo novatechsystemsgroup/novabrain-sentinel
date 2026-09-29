@@ -43,12 +43,14 @@ human view, and it is the reason S12 and S14b exist.
   model call takes tens of seconds (`static/index.html:124`); the eyebrow naming the competition
   (`static/index.html:13`).
 - **Narration:** block 1 (problem + pitch).
-- **Risk / fallback:** if the deployment does not yet carry the corrected eyebrow and subtitle,
-  reshoot after the approved redeploy or re-cut block 1 over the diagram shot. Do not fix it in post.
+- **Risk / fallback:** cleared 2026-09-29 — production serves the corrected eyebrow and subtitle, and
+  `static/index.html` hashes the same served as committed, so this shot can be filmed against the
+  public URL as written. If a later deploy regresses it, reshoot rather than fix it in post.
 - **Number caution:** `static/index.html:124` currently renders "about 15–50 seconds", which is wider
   than the measured 6.7–47.1 s (`claims-audit.md`, *Found, deliberately not edited*). Narrate the
-  elapsed time you actually watch, never the printed range — and if the pending edit ships, the
-  frame reads 7–47 and stays usable either way.
+  elapsed time you actually watch, never the printed range. The served page carries that same stale
+  range, so the frame will show it — an edit to the line needs its own commit and deploy, and until
+  one lands nothing changes what S01 can show.
 
 ### S02 — The disclosure badge  ·  ~0:12  ·  browser, punch-in
 - **Action:** hold on the footer badge.

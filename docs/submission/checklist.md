@@ -69,23 +69,28 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
   errors**, the only console line being Chrome's own `409 (Conflict)` notice for the deliberate
   blocked attempt.
 - [x] Bearer guard live: `POST /api/v1/events/ingest` without a token → `401` +
-  `WWW-Authenticate: Bearer`; wrong token → `401`; `GET` on the route → `405`.
-- [ ] **MANUAL ACTION REQUIRED** — **Redeploy, then re-verify two strings.** Production serves the
-  image from the last deploy, not `main`, so the page renders the old eyebrow
-  `NVIDIA Build Challenge` and the old subtitle **`Persistent Operational AI Agent`**
-  (`static/index.html:13,15`). The corrected strings ("NVIDIA Claw Agent Challenge: London" /
-  "Event-driven operational agent") exist only in the tree — `34e4053` and this pack — so they are
-  invisible publicly until a redeploy. Everything else in the served page is byte-identical to the
-  tree — I diffed it. The public landing page is the first
-  thing a judge sees, and today it states the one claim this task set out to retire. **This needs
-  explicit approval: TASK-015 §17 forbids an automatic deploy.** Shoot the video only after it.
-- [ ] **MANUAL ACTION REQUIRED (needs the same approval as the line above)** — `static/index.html:124`
-  still promises "about 15–50 seconds" against a measured **6.7–47.1 s**. The one-line edit
-  (`15&ndash;50` → `7&ndash;47`) was **not** made: §16 says a code change is described, not slipped in,
-  and no test pins the string, so nothing forces the timing. Full defect / impact / regression
-  analysis is in [`claims-audit.md`](claims-audit.md), *Found, deliberately not edited*. If the
-  redeploy is approved, decision requested: let this line ship inside that same deploy so the
-  console and the README state one number, not two.
+  `WWW-Authenticate: Bearer`; wrong token → `401`; `GET` on the route → `405`. The answer is `401`,
+  not `503 ingest_not_configured`, so the deployed runtime **does** have `SENTINEL_INGEST_TOKEN`
+  set — its value is deliberately not read here (names, not values).
+- [x] **Production serves the code in this tree.** Re-checked 2026-09-29: `GET /` renders
+  the corrected eyebrow `NVIDIA Claw Agent Challenge: London` and subtitle `Event-driven operational
+  agent`, with **0** hits for either retired string (`NVIDIA Build Challenge`, `Persistent
+  Operational AI Agent`). All three static files are byte-identical to the tree — `index.html`,
+  `app.js` and `styles.css` each hash the same served as committed — and
+  `POST /api/v1/events/ingest` answers `401`, so the TASK-014 route is live too. `/openapi.json`
+  lists 8 paths, matching `sentinel/api.py`. Nothing in the repository records what triggered that
+  deploy (`docs/deployment/coolify.md` documents no webhook), so the evidence is the served page,
+  not a deploy log. Earlier drafts of this checklist said a redeploy was still pending; that was
+  overtaken by events, and the fix here was to the document, not the service. **No deploy was
+  performed for this task** — nothing in it needed one.
+- [ ] **MANUAL ACTION REQUIRED** — `static/index.html:124` still promises "about 15–50 seconds"
+  against a measured **6.7–47.1 s**. The one-line edit (`15&ndash;50` → `7&ndash;47`) was **not**
+  made: §16 says a code change is described, not slipped in, and no test pins the string, so nothing
+  forces the timing. Because the page is byte-identical to the tree, the served console carries the
+  same stale range, which is the version a judge sees. Full defect / impact / regression analysis is
+  in [`claims-audit.md`](claims-audit.md), *Found, deliberately not edited*. It now needs **its own
+  commit plus its own deploy** — the earlier "ride the pending redeploy" option expired when that
+  redeploy landed without it.
 - [ ] **MANUAL ACTION REQUIRED** — Prove `201` + replay `duplicate:true` **on the public URL**. It
   needs `SENTINEL_INGEST_TOKEN` from the deployed runtime, which this QA pass deliberately did not
   read (names, not values). Evidence today: the full machine-first loop ran in a local container
@@ -229,20 +234,32 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
 - [ ] Final pre-submit read: does any sentence promise more than `claims-audit.md` supports?
 - [ ] **Submit**, then record the timestamp. Deadline **2026-10-02 23:59 PST**.
 
-## 11. Final smoke test (after the redeploy)
+## 11. Final smoke test before recording
 
-- [ ] `GET /` still 200 and now rendering `Event-driven operational agent` with the London eyebrow.
-- [ ] `/health` → `{"status":"ok","service":"novabrain-sentinel"}`.
+Production already serves the code in this tree, so the remaining items here are pre-video checks,
+not post-deploy verification. The first two and the last two were run 2026-09-29; the two console
+runs are the steps a recording day still owes.
+
+- [x] `GET /` 200, rendering `Event-driven operational agent` with the London eyebrow; **0** hits for
+  either retired string.
+- [x] `/health` → `{"status":"ok","service":"novabrain-sentinel"}`.
 - [ ] One cold console run: *Run Demo Incident* → `high` → gate → refuse → approve → execute →
-  `VERIFIED`.
+  `VERIFIED`. §3 records the live console QA already done (both viewports, 0 JS errors, the
+  deliberate blocked attempt); this line is the fresh end-to-end take on recording day, so the
+  narration is describing what happened minutes earlier.
 - [ ] One machine run against the public URL: `201`, open `/?incident=<id>`, replay → `200
-  duplicate:true` with the same incident id.
-- [ ] Secret sweep over the two responses (`/`, `/openapi.json`): 0 hits.
-- [ ] `git rev-parse HEAD` equals `git rev-parse origin/main`, working tree clean.
+  duplicate:true` with the same incident id. Blocked on the deployed `SENTINEL_INGEST_TOKEN`,
+  which this pass deliberately did not read — see §3.
+- [x] Secret sweep over the served responses (`/`, `/openapi.json`, `/static/app.js`): **0** hits
+  for the documented pattern set.
+- [ ] `git rev-parse HEAD` equals `git rev-parse origin/main`, working tree clean. Verified at the
+  moment of writing; re-run after the final commit, since this document cannot quote the SHA of the
+  commit that carries it.
 
 ## Blocked
 
 - [x] Nothing in this task is blocked by the code. Two items are blocked on access I deliberately do
-  not have: the deployed `SENTINEL_INGEST_TOKEN` value (line 3.6) and the registration-gated rules
-  (line 1). Both are named as such rather than worked around — reading a production secret to tick a
-  box would be exactly the kind of claim this pack is trying to retire.
+  not have: the deployed `SENTINEL_INGEST_TOKEN` value (§3, *Prove `201` + replay
+  `duplicate:true`*) and the registration-gated rules (§1). Both are named as such rather than worked
+  around — reading a production secret to tick a box would be exactly the kind of claim this pack is
+  trying to retire.

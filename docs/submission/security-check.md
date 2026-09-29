@@ -6,7 +6,7 @@ output.
 
 **Scan set:** every file `git ls-files` plus `git ls-files --others --exclude-standard` reports
 (48 files, all tracked now that this pack is committed, 0 untracked), minus **this file** — 47 files,
-425,857 bytes, `.venv/` and
+427,717 bytes, `.venv/` and
 `__pycache__/` excluded. The exclusion is necessary, not cosmetic: a secret scan has to name the
 patterns it searches for, so including the report in its own denominator would make every count in
 it move each time the report is edited. The repository already handles this problem once:
@@ -32,7 +32,7 @@ sweep that included it.
 
 | Surface | Method | Result |
 |---|---|---|
-| Scan set: 47 files, 425,857 bytes | line-by-line sweep for the value shapes `nvapi-` + a key character, `Bearer` + a ≥12-character non-placeholder token, `SENTINEL_INGEST_TOKEN=`/`NVIDIA_API_KEY=` + a non-empty non-placeholder value, `BEGIN … PRIVATE KEY`, `AKIA[0-9A-Z]{16}`, `ghp_`/`github_pat_` + ≥8 characters | **0 secret values.** 83 lines in the scan set merely *name* one of those patterns or variables (prose tables, `os.environ.get(...)`, assertions); **6** of them carry text in the value position, listed one by one below, all benign. PEM blocks 0, `AKIA…` 0, `ghp_…`/`github_pat_…` 0 |
+| Scan set: 47 files, 427,717 bytes | line-by-line sweep for the value shapes `nvapi-` + a key character, `Bearer` + a ≥12-character non-placeholder token, `SENTINEL_INGEST_TOKEN=`/`NVIDIA_API_KEY=` + a non-empty non-placeholder value, `BEGIN … PRIVATE KEY`, `AKIA[0-9A-Z]{16}`, `ghp_`/`github_pat_` + ≥8 characters | **0 secret values.** 85 lines in the scan set merely *name* one of those patterns or variables (prose tables, `os.environ.get(...)`, assertions); **6** of them carry text in the value position, listed one by one below, all benign. PEM blocks 0, `AKIA…` 0, `ghp_…`/`github_pat_…` 0 |
 | High-entropy sweep, same 47 files | every run of ≥32 unbroken `[-\w]` characters — word characters **and** hyphens, so that separator rules are surfaced and classified rather than silently omitted — then classified | **0 credentials.** 178 runs, fully accounted for: 128 are `test_*` identifiers, 33 are Markdown/ASCII separator rules, 15 are `inc_` + 32-hex incident ids (8 distinct; public by design — they are the console's `?incident=` value), 2 are hyphenated prose (`authenticated-by-different-means`, `guessed-token-should-never-be-echoed`). None is opaque-and-mixed in the way a generated secret is |
 | Git history — every line ever added, swept through `git log --all -p` | same patterns against every added line in every commit | **0 secret values.** 0 added lines where `nvapi-` is followed by a key character; 6 added lines sit in a value position and all are placeholders or source code — three `SENTINEL_INGEST_TOKEN=` (`...` twice, one regex body), two `NVIDIA_API_KEY=` (one empty, one `export NVIDIA_API_KEY=nvapi-...` whose value is a literal ellipsis, later rewritten to `'paste your NVIDIA Build key here'`), and the header built at run time `f"Bearer {config.api_key}"`. Six added lines spell the `nvapi-` prefix inside test assertions and a `# never commit a real value` comment. The diff's own size is not quoted here, for the same reason the byte total appears only once: commit count, byte count and added-line count grow with every commit, while this result does not — step 2c prints them on demand. The sweep was re-run after this pack landed and after every follow-up commit since. **It returns 0.** The pack adds no new secret-shaped text — its lines *are* the documents the tree sweep above already covers file by file — and the value patterns cannot self-match, because a bracket or a space always follows the prefix in this pack. One caveat belongs to the method rather than to the result: the same sweep with a greedy `.*` between the two PEM words returns a non-zero count made up entirely of this report — the row that describes the pattern, the command lines that carry it, the commit that replaced the greedy form with the strict one — and no figure is quoted for it, because it is unstable by construction: any later commit writing those two words in either form adds to it, whereas the strict set cannot self-match, which is why the sweep above uses it. |
 | `.env` in the tree and in history | `rglob(".env*")`, `git log --all -- .env` | **absent.** Only `.env.example` exists; no commit has ever touched `.env` |
@@ -43,7 +43,7 @@ sweep that included it.
 
 ## The matches, stated rather than hidden
 
-A scan that reports "nothing found" is not evidence. 83 lines in the scan set name one of these
+A scan that reports "nothing found" is not evidence. 85 lines in the scan set name one of these
 patterns or variables; the overwhelming majority are prose (`| NVIDIA_API_KEY | *(none)* | … |`), an
 `os.environ.get("…")` call, or a test assertion. What a reviewer needs is the subset that puts
 *something in the value position*, because that is the only shape that could leak a credential.
@@ -133,7 +133,7 @@ scan set — the same reason `docs/architecture/operational-console.md` is outsi
 reviewer can therefore re-derive every number above rather than trust it:
 
 ```bash
-# 0. the scan set: 48 files in the tree, minus this report = 47 files, 425,857 bytes
+# 0. the scan set: 48 files in the tree, minus this report = 47 files, 427,717 bytes
 git ls-files; git ls-files --others --exclude-standard    # .venv/ and __pycache__/ excluded
 { git ls-files; git ls-files --others --exclude-standard; } \
   | grep -v '^docs/submission/security-check\.md$' | sort -u | xargs wc -c | tail -1
@@ -152,12 +152,12 @@ git log --all -p | grep -cE '^\+.*(nvapi-[A-Za-z0-9]|AKIA[0-9A-Z]{16}|BEGIN [A-Z
 grep -nE 'nvapi-[A-Za-z0-9]|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY|(ghp_|github_pat_)[A-Za-z0-9_]{8,}' \
   docs/submission/security-check.md
 
-# 2b. the mention census behind the "83 lines name a pattern" figure. Each anchor is written as a
+# 2b. the mention census behind the "85 lines name a pattern" figure. Each anchor is written as a
 # bracket class so this command line cannot match itself and move the number it reports.
 { git ls-files; git ls-files --others --exclude-standard; } \
   | grep -v '^docs/submission/security-check\.md$' | sort -u \
   | xargs grep -cE '[n]vapi|NVIDIA_[A]P[I]_KEY|SENTINEL_[I]NGEST_[T]OKEN|[P]RIVATE KEY|[A]KIA|[g]hp_|github_[p]at_|[B]earer ' \
-  | awk -F: '{s+=$2} END{printf "mentions=%d\n", s}'                                 # mentions=83
+  | awk -F: '{s+=$2} END{printf "mentions=%d\n", s}'                                 # mentions=85
 
 # 2c. the size of the history just swept — quoted nowhere in this pack, because it moves with every commit
 git rev-list --count --all; git log --all -p | wc -c; git log --all -p | wc -l
@@ -180,11 +180,11 @@ done
          END{printf "test_=%d separators=%d inc_=%d prose=%d total=%d\n", a,b,c,NR-a-b-c, NR}'
 ```
 
-Observed, in this order: step 0 lists the 48 filenames and then `425857 total` (the comma in
-"425,857" is this document's, not `wc`'s); step 1 prints `26 passed` then `4 passed`; step 2 prints
+Observed, in this order: step 0 lists the 48 filenames and then `427717 total` (the comma in
+"427,717" is this document's, not `wc`'s); step 1 prints `26 passed` then `4 passed`; step 2 prints
 **nothing** (grep exit `1`, i.e. no match anywhere in the scan set) and then `0` for history; step 2a
 prints **nothing** either, exit `1`, which is the paragraph above being true; step 2b prints
-`mentions=83`; step 2c prints the history's size, which is the reason no figure of that kind is quoted
+`mentions=85`; step 2c prints the history's size, which is the reason no figure of that kind is quoted
 for it anywhere in this pack; step 3 prints `./.env.example` and nothing from `git log`; step 4 prints `0`
 for all six paths; step 5 prints `test_=128 separators=33 inc_=15 prose=2 total=178` with nothing
 unmatched but the two hyphenated prose runs named in that row.

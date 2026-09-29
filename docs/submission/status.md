@@ -28,7 +28,7 @@ It is not a production SRE platform and does not claim to be one.
 | TASK-014 | Machine event ingestion: `POST /api/v1/events/ingest`, bearer guard before body parsing, in-process idempotency ledger, `event_ingested` audit event, `/?incident=<id>` console bridge, demo emitter script | **DONE** | `sentinel/ingestion.py`, `scripts/send_demo_event.py`; `docs/architecture/machine-event-ingestion.md`, ADR-0003 |
 | TASK-015 | Submission readiness: requirements verification, evidence matrix, honest architecture, canonical demo scenario, video script + shot list, claims audit, secret scan, submission copy, checklist, this status file | **DONE** (code frozen; nothing added) | all twelve files in `docs/submission/` |
 | — | Coolify deployment to the public URL | **DONE** | `docs/deployment/coolify.md`; live `/health` + browser QA |
-| — | **Redeploy so production serves the corrected header strings** | **NEXT — needs approval** | `checklist.md` §3: live page still renders `Persistent Operational AI Agent` |
+| — | Production serving the corrected header strings and the TASK-014 route | **DONE** | measured 2026-09-29: live `GET /` renders the London eyebrow and `Event-driven operational agent` with 0 hits for either retired string, the three `static/` files hash identically served and committed, and `POST /api/v1/events/ingest` answers `401`. No deploy was triggered by this task — the service was already current. |
 | — | Record, review and publish the demo video | **NEXT** | `video-script.md`, `video-shot-list.md` |
 | — | Fill and submit the Airtable entry form | **NEXT — deadline 2026-10-02 23:59 PST** | `requirements.md` #1, #5 |
 | — | Final pre-submit smoke test on the public URL | **NEXT** | `checklist.md` §11 |

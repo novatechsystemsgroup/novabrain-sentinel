@@ -121,10 +121,11 @@ and it is the only remaining instance.
 | **Consistency** | Every other document carries the corrected band — `README.md:387`, `README.md:415`, `README.md:512`, `docs/deployment/coolify.md:107` and `:215`, `docs/architecture/incident-analysis.md:100`, `docs/submission/submission-copy.md:140`, `evidence-matrix.md:43`. The UI string is the last hold-out, so a judge who compares the console's own wording with the README finds a disagreement inside the submission. |
 | **Submission impact** | Moderate and self-inflicted: the whole entry is built on "we say what we measured." A number on screen that we did not measure is exactly the kind of claim §8 exists to catch, and it is visible in shot S01. |
 | **Minimal fix** | One line, `static/index.html:124`, `15&ndash;50` → `7&ndash;47`. No test pins this string (grepped `tests/` for `a-empty`, `No assessment yet`, `15`): the console tests assert structure and the disclosure labels, not the empty-state copy, so no re-pinning is needed. |
-| **Regression risk** | Text only, one paragraph node, no selector, id or length dependency. The risk is not in the edit — it is in shipping it: `static/` is baked into the image, so the change is invisible at `https://sentinel.novatechsystem.co.uk` until the service is redeployed. |
-| **Why it was left** | §16 restricts this task to docs, evidence and QA, and requires that a code change be described rather than made. It also rides on a redeploy that §17 already gates on explicit approval — the same pending deploy that must carry `index.html:13` and `:15`. Editing it now would create a third string shipped by the same one approval, which is the efficient path; making it silently would not be. |
+| **Regression risk** | Text only, one paragraph node, no selector, id or length dependency. The risk is not in the edit — it is in shipping it: `static/` is baked into the image, so the change is invisible at `https://sentinel.novatechsystem.co.uk` until the service is redeployed. Production currently serves the unedited line: `static/index.html` hashes the same served as committed. |
+| **Why it was left** | §16 restricts this task to docs, evidence and QA, and requires that a code change be described rather than made. §17 additionally gates any deploy on explicit approval, and this pass performed none — the entry's header strings were already corrected by the deploy that landed before this audit was written. |
 
-Decision requested: approve the one-line edit and let it ship inside the already-pending redeploy.
-Until then this is a **known, documented, unfixed** wording defect — tracked as a MANUAL line in
-[`checklist.md`](checklist.md) §5, not hidden in the README's own numbers.
+Decision requested: approve the one-line edit, then ship it in a deploy. It needs **its own commit
+plus its own deploy**, because the deploy that corrected `static/index.html:13` and `:15` landed
+without it. Until then this is a **known, documented, unfixed** wording defect — tracked as a MANUAL
+line in [`checklist.md`](checklist.md) §3, not hidden in the README's own numbers.
 
