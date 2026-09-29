@@ -43,14 +43,18 @@ human view, and it is the reason S12 and S14b exist.
   model call takes tens of seconds (`static/index.html:124`); the eyebrow naming the competition
   (`static/index.html:13`).
 - **Narration:** block 1 (problem + pitch).
-- **Risk / fallback:** cleared 2026-09-29 — production serves the corrected eyebrow and subtitle, and
-  `static/index.html` hashes the same served as committed, so this shot can be filmed against the
-  public URL as written. If a later deploy regresses it, reshoot rather than fix it in post.
-- **Number caution:** `static/index.html:124` currently renders "about 15–50 seconds", which is wider
-  than the measured 6.7–47.1 s (`claims-audit.md`, *Found, deliberately not edited*). Narrate the
-  elapsed time you actually watch, never the printed range. The served page carries that same stale
-  range, so the frame will show it — an edit to the line needs its own commit and deploy, and until
-  one lands nothing changes what S01 can show.
+- **Risk / fallback:** checked 2026-09-29 against `4cc545a` — production serves the corrected eyebrow
+  and subtitle, and `static/index.html` hashed the same served as committed. **That equivalence no
+  longer holds:** the submitted tree edits line 124, so the empty-state sentence in this frame is
+  only on the public URL after the redeploy. The eyebrow (`:13`) and subtitle (`:15`) are unaffected
+  by that edit and are already correct in production.
+- **Number caution:** the printed wait is now a budget, not an estimate — `static/index.html:124`
+  reads "A real NVIDIA model call can take tens of seconds — allow up to 90s", which is the client
+  read timeout (`sentinel/nvidia.py:25`) rather than a measured band, so it cannot go stale
+  (`claims-audit.md`, *Found and fixed*). Narrate the elapsed time you actually watch. **The served
+  page still carries the old "about 15–50 seconds" sentence** until the redeploy in
+  `checklist.md` lands: S01 is only safe to film against the public URL after that deploy, otherwise
+  film it against a locally-run container built from the submitted tree.
 
 ### S02 — The disclosure badge  ·  ~0:12  ·  browser, punch-in
 - **Action:** hold on the footer badge.

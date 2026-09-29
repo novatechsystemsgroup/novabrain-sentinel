@@ -418,13 +418,33 @@ The browser console for the whole production session held exactly one line: Chro
 errors, zero warnings — the same result as TASK-013 and TASK-014, and the same reason: any non-2xx
 fetch produces that line.
 
-### Not proven on production
+### Proven on production
 
-The `201`/replay pair was **not** exercised against the public URL. `SENTINEL_INGEST_TOKEN` is a
-runtime-only value that this QA pass cannot read, so an unauthenticated probe can prove the guard
-rejects (verified: 401 twice) but not that the guard accepts. The full machine-first loop above is
-therefore evidence from the local container built from the same tree, and the check-list item stays
-`MANUAL ACTION REQUIRED` rather than `PASS`.
+Recorded 2026-09-29: the `201`/replay pair was exercised against the public URL with the deployed
+`SENTINEL_INGEST_TOKEN`, by the holder of that token rather than by this QA pass, which deliberately
+never reads it (names, not values). The run was:
+
+| Step | Result |
+|---|---|
+| first `POST /api/v1/events/ingest` | `HTTP 201`, `event_id: novaops-public-demo-001`, `incident_id: inc_a670b4d08a1848e997c4ed006e2842da`, `workflow_state: awaiting_approval`, `duplicate: False` |
+| replay of the same `event_id` | `HTTP 200`, the **same** `incident_id`, `duplicate: True` |
+| `/?incident=inc_a670b4d08a1848e997c4ed006e2842da` | the browser console opened that incident |
+| audit trail | `Operational event ingested` → `Incident analyzed` → `Human approval requested` |
+
+Two honesty notes attach to this, and both are the reason it is transcribed rather than re-run here.
+First, **no latency is recorded for these two calls**, because none was measured; the `6.7–47.1 s`
+band and the `9.6 s`/`0.02 s` figures elsewhere on this page are from the local container, and this
+row does not extend them. Second, **the stored incident is no longer retrievable**: a follow-up
+`GET /api/v1/incidents/inc_a670b4d08a1848e997c4ed006e2842da` returns `404`, which is the expected
+consequence of in-process state (root `README.md:331`, "the ledger is in-process memory, so **a
+restart clears it**", and
+[`docs/architecture/approval-workflow.md`](../architecture/approval-workflow.md)) rather than a
+contradiction of the run. The evidence is therefore the transcript, and the only way to produce a
+fresh one is a new production incident.
+
+What this pass verified independently, without the token, is the rejection side and the shape: a
+tokenless `POST` answers `401` (twice), and the incident id satisfies the documented
+`^inc_[0-9a-f]{32}$` that `/?incident=` accepts.
 
 `/openapi.json` does not document the bearer requirement on `/api/v1/events/ingest` — zero
 occurrences of `Bearer` in the schema. Fixing it means editing `api.py`, which would require a
@@ -436,8 +456,9 @@ recorded as a known limitation instead, and the contract is documented in
 
 `LEARN` is not implemented, so there is nothing to evaluate for it.
 
-Machine ingestion has not produced a `201` on the **public** URL — see *Not proven on production*
-above. It needs the deployed runtime token, which this QA pass deliberately does not read.
+Machine ingestion **has** produced a `201` and a `duplicate:true` replay on the public URL — see
+*Proven on production* above. What remains unmeasured there is its latency: no timing was captured
+for that run, so the band on this page stays the six local runs.
 
 The `failed` verification path is deterministic and covered by tests (`restart_api_service` on
 a `critical` incident does not recover it, so `state: "failed"` and `after == before`), but it

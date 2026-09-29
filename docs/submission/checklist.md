@@ -13,6 +13,13 @@ files under `docs/submission/` plus the README and `docs/evaluation/README.md` u
 top of it and changes no code, so every `file:line` reference below holds for both. A file cannot
 record its own push, so the push is a step in §2 verified by command, not a SHA typed into prose.
 
+**Redeploy required.** TASK-015A changed one line of `static/index.html` (the empty-state wait copy,
+§3). Production served the pre-TASK-015A page, so the deployed console now differs from this tree by
+that line, and serving the corrected copy needs a Coolify deploy. This pass did not deploy: the brief
+says not to, and the change is a copy fix, so the live page is still a working console showing one
+out-of-date sentence. Recording the video against the deployed page therefore shows the old wording
+unless the deploy happens first.
+
 ## 1. Competition requirements
 
 - [x] Requirements read from the organiser's page, not assumed — `luma.com/claw-agent-challenge-london`,
@@ -35,15 +42,19 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
 
 - [x] Public repository with a licence: `https://github.com/novatechsystemsgroup/novabrain-sentinel`,
   visibility PUBLIC, MIT (`LICENSE`).
-- [x] Tests green on the tree being submitted: **211 passed**, run as
+- [x] Tests green on the tree being submitted: **212 passed**, run as
   `.venv/bin/python -m pytest -q` (bare `pytest` fails collection — no `conftest.py`, so the repo
   root is not on `sys.path`). Re-run immediately before commit; the number in the completion report
-  is the number from the final tree.
+  is the number from the final tree. TASK-015A added one test, the copy guard in
+  `tests/test_console.py::test_inference_wait_copy_promises_the_backend_read_budget`.
 - [x] `docker build .` succeeds on the tree being submitted: `sha256:b38dbf9d…` (tag
   `novabrain-sentinel:qa-task015`), **246 MB**, `python:3.13-slim`, `USER 10001` verified inside the
-  running container (`id -u` → `10001`), healthcheck `healthy`, `RestartCount: 0`. The build context
-  copies only `requirements.txt`, `sentinel/` and `static/`, so this pack cannot change it.
-- [x] Relative links resolve: over the 24 Markdown files `git ls-files` reports, 60 relative links,
+  running container (`id -u` → `10001`), healthcheck `healthy`, `RestartCount: 0`. **That digest is
+  superseded for the submitted tree:** the build context copies `requirements.txt`, `sentinel/` and
+  `static/`, and TASK-015A edited `static/index.html:124`, so the image baked before that edit no
+  longer matches the tree. Re-built after the copy fix (digest in `evidence-matrix.md`).
+- [x] Relative links resolve: over the 24 Markdown files `git ls-files` reports, 61 relative links
+  (60 before TASK-015A added the `approval-workflow.md` citation to `docs/evaluation/README.md`),
   **0 broken**, re-run on the final tree. The set comes from `git ls-files`, not `find`: an earlier
   figure of 25 files here came from a `find`-based sweep, which also picked up
   `.pytest_cache/README.md` — an ignored, generated file that is not in the repository and so is
@@ -72,30 +83,56 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
   `WWW-Authenticate: Bearer`; wrong token → `401`; `GET` on the route → `405`. The answer is `401`,
   not `503 ingest_not_configured`, so the deployed runtime **does** have `SENTINEL_INGEST_TOKEN`
   set — its value is deliberately not read here (names, not values).
-- [x] **Production serves the code in this tree.** Re-checked 2026-09-29: `GET /` renders
+- [x] **Production serves the deployed code.** Re-checked 2026-09-29 against `4cc545a`: `GET /` renders
   the corrected eyebrow `NVIDIA Claw Agent Challenge: London` and subtitle `Event-driven operational
   agent`, with **0** hits for either retired string (`NVIDIA Build Challenge`, `Persistent
-  Operational AI Agent`). All three static files are byte-identical to the tree — `index.html`,
-  `app.js` and `styles.css` each hash the same served as committed — and
+  Operational AI Agent`). All three static files were byte-identical to the tree at that commit —
+  `index.html`, `app.js` and `styles.css` each hash the same served as committed — and
   `POST /api/v1/events/ingest` answers `401`, so the TASK-014 route is live too. `/openapi.json`
   lists 8 paths, matching `sentinel/api.py`. Nothing in the repository records what triggered that
   deploy (`docs/deployment/coolify.md` documents no webhook), so the evidence is the served page,
   not a deploy log. Earlier drafts of this checklist said a redeploy was still pending; that was
   overtaken by events, and the fix here was to the document, not the service. **No deploy was
   performed for this task** — nothing in it needed one.
-- [ ] **MANUAL ACTION REQUIRED** — `static/index.html:124` still promises "about 15–50 seconds"
-  against a measured **6.7–47.1 s**. The one-line edit (`15&ndash;50` → `7&ndash;47`) was **not**
-  made: §16 says a code change is described, not slipped in, and no test pins the string, so nothing
-  forces the timing. Because the page is byte-identical to the tree, the served console carries the
-  same stale range, which is the version a judge sees. Full defect / impact / regression analysis is
-  in [`claims-audit.md`](claims-audit.md), *Found, deliberately not edited*. It now needs **its own
-  commit plus its own deploy** — the earlier "ride the pending redeploy" option expired when that
-  redeploy landed without it.
-- [ ] **MANUAL ACTION REQUIRED** — Prove `201` + replay `duplicate:true` **on the public URL**. It
-  needs `SENTINEL_INGEST_TOKEN` from the deployed runtime, which this QA pass deliberately did not
-  read (names, not values). Evidence today: the full machine-first loop ran in a local container
-  built from the same tree, and production proves only the rejection side. One run is enough; do
-  not create a batch of production incidents.
+  **That equivalence ended with the copy fix below:** once `static/index.html` changed in the tree,
+  the served page stopped matching it, so a redeploy is required to carry the new wording. See
+  *Redeploy required* at the top of this file.
+- [x] **`static/index.html:124` wait copy corrected.** It used to promise "a real NVIDIA model call
+  takes about 15–50 seconds", a measured band from six runs (actual **6.7–47.1 s**) whose lower bound
+  had already been undercut, so a slower run made the console's own empty state a false promise to the
+  judge reading it. TASK-015A replaced the range with the durable form — "A real NVIDIA model call can
+  take tens of seconds — allow up to 90s" — which matches what the client actually enforces
+  (`READ_TIMEOUT = 90.0`, `sentinel/nvidia.py:25`) and what `static/app.js` already said
+  (`:281`, `:98`). **No backend timeout was changed.** The copy is now pinned by
+  `tests/test_console.py::test_inference_wait_copy_promises_the_backend_read_budget`, which asserts
+  the placeholder quotes `int(READ_TIMEOUT)` and rejects any `N–M seconds` range, so the number can no
+  longer drift from the code it describes. Full defect history in
+  [`claims-audit.md`](claims-audit.md), *Found and fixed*. Verified rendered, not just written: the
+  `qa-task015a` image built from this tree serves the sentence over `GET /`, and in a browser at
+  1440 × 900 it is one line of the `.placeholder` style it already used and at 390 × 844 it wraps to
+  three with `scrollWidth − clientWidth = 0` and **0** console messages. Production, re-fetched the
+  same day, still returns the old sentence (`grep -c 'takes about'` → `1`), which is the redeploy row
+  above measured rather than asserted.
+- [x] **`201` + replay `duplicate:true` proven on the public URL.** Recorded 2026-09-29 from the run
+  made against `https://sentinel.novatechsystem.co.uk` with the deployed `SENTINEL_INGEST_TOKEN` —
+  a credential this QA pass deliberately never read (names, not values), so the run is the token
+  holder's evidence, transcribed here rather than reproduced here:
+  - first ingest: `HTTP 201`, `event_id: novaops-public-demo-001`,
+    `incident_id: inc_a670b4d08a1848e997c4ed006e2842da`, `workflow_state: awaiting_approval`,
+    `duplicate: False`;
+  - replay of the same `event_id`: `HTTP 200`, the **same** `incident_id`, `duplicate: True`;
+  - the console opened that incident through `/?incident=inc_a670b4d08a1848e997c4ed006e2842da`, and
+    the audit trail reads `Operational event ingested` → `Incident analyzed` →
+    `Human approval requested`.
+  What this pass could verify independently is only the shape and the route: the incident id matches
+  the documented `^inc_[0-9a-f]{32}$`, and `POST /api/v1/events/ingest` still answers `401` without a
+  bearer token. **The stored incident itself is no longer retrievable** — a follow-up
+  `GET /api/v1/incidents/inc_a670b4d08a1848e997c4ed006e2842da` returns `404`, which is the documented
+  in-process-memory limit (`README.md:331` "a restart clears it",
+  `docs/architecture/approval-workflow.md:178-179` "`POST /execute` on a restarted instance is a 404"),
+  not a contradiction of the run. No timing for these two
+  calls is recorded, because none was measured: the measured latency band in §4 is from the six local
+  runs, and this document does not extend it.
 
 ## 4. NVIDIA integration
 
@@ -106,7 +143,7 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
   `temperature 0.1`, `top_p 0.9`, `max_tokens 4096` (`nvidia.py:140-143`); the payload is validated
   by pydantic, and an out-of-enum severity is a provider error rather than a guess.
 - [x] Only `tool_calls[0].function.arguments` is read; `content` and `reasoning_content` are never
-  surfaced (`nvidia.py:4`, asserted in `tests/test_console.py:502`).
+  surfaced (`nvidia.py:4`, asserted in `tests/test_console.py::test_ui_does_not_fake_progress_or_read_hidden_reasoning`).
 - [x] Measured latency band across six live runs **6.7–47.1 s**, read timeout `90 s`; confidence
   observed 0.86–0.87. Documented as measured, never as a promise.
 - [x] No second provider, no local fallback model, no fake-response switch in the shipped path.
@@ -129,8 +166,9 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
 ## 6. Evaluation and evidence
 
 - [x] `docs/evaluation/README.md` carries the TASK-015 submission QA section with measured timings,
-  the local machine-first run, the public production run, and an explicit *Not proven on
-  production* list.
+  the local machine-first run, and since TASK-015A the transcribed **public production** ingest run
+  under *Proven on production*, with what remains unmeasured there (its latency) split out under
+  *Not yet measured*.
 - [x] Evidence matrix: implementation → artefact → demo moment → honesty note for every criterion.
 - [x] Claims audit: swept twice — 42 files mid-task, then the **final 48-file tree**; 7 statements
   rewritten, 1 removed outright ("Defense in depth"), 1 factually inverted claim fixed
@@ -236,9 +274,10 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
 
 ## 11. Final smoke test before recording
 
-Production already serves the code in this tree, so the remaining items here are pre-video checks,
-not post-deploy verification. The first two and the last two were run 2026-09-29; the two console
-runs are the steps a recording day still owes.
+Production served the code in this tree until TASK-015A edited `static/index.html:124`; the deploy
+that carries the new wording has not happened, so the items below split into pre-video checks that
+are already true of the live page and one that only becomes true after a redeploy. The first two and
+the last two were run 2026-09-29; the cold console run is what a recording day still owes.
 
 - [x] `GET /` 200, rendering `Event-driven operational agent` with the London eyebrow; **0** hits for
   either retired string.
@@ -247,19 +286,27 @@ runs are the steps a recording day still owes.
   `VERIFIED`. §3 records the live console QA already done (both viewports, 0 JS errors, the
   deliberate blocked attempt); this line is the fresh end-to-end take on recording day, so the
   narration is describing what happened minutes earlier.
-- [ ] One machine run against the public URL: `201`, open `/?incident=<id>`, replay → `200
-  duplicate:true` with the same incident id. Blocked on the deployed `SENTINEL_INGEST_TOKEN`,
-  which this pass deliberately did not read — see §3.
+- [x] One machine run against the public URL: `201`, open `/?incident=<id>`, replay → `200
+  duplicate:true` with the same incident id. **Done** — §3 records the transcript of the run made
+  with the deployed `SENTINEL_INGEST_TOKEN` (`novaops-public-demo-001` →
+  `inc_a670b4d08a1848e997c4ed006e2842da`, replay `duplicate:true`, same incident id). A recording-day
+  re-run is optional, not required: it would create a second production incident to prove what is
+  already proven, and the stored incident from the recorded run is gone with the process that held it
+  (see §3), so a fresh run cannot reproduce that transcript — only a new one.
 - [x] Secret sweep over the served responses (`/`, `/openapi.json`, `/static/app.js`): **0** hits
   for the documented pattern set.
 - [ ] `git rev-parse HEAD` equals `git rev-parse origin/main`, working tree clean. Verified at the
   moment of writing; re-run after the final commit, since this document cannot quote the SHA of the
   commit that carries it.
+- [ ] **New in TASK-015A:** re-fetch `GET /` after the redeploy and confirm the empty state reads
+  "allow up to 90s" with **0** hits for the retired `takes about` range. Until that lands the
+  judgement call is whether to record against the deployed page (old copy) or a locally-run container
+  from this tree (new copy).
 
 ## Blocked
 
-- [x] Nothing in this task is blocked by the code. Two items are blocked on access I deliberately do
-  not have: the deployed `SENTINEL_INGEST_TOKEN` value (§3, *Prove `201` + replay
-  `duplicate:true`*) and the registration-gated rules (§1). Both are named as such rather than worked
-  around — reading a production secret to tick a box would be exactly the kind of claim this pack is
-  trying to retire.
+- [x] Nothing in this task is blocked by the code. The one item that used to be — proving `201` +
+  replay `duplicate:true` on the public URL, which needed the deployed `SENTINEL_INGEST_TOKEN` this
+  pack deliberately never reads (names, not values) — is closed in §3 by the token holder's run, and
+  reading a production secret to tick a box is still not how it gets closed here.
+- [x] The registration-gated rules (§1) stay **UNKNOWN** until someone opens the form.

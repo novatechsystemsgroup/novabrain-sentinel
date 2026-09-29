@@ -1,12 +1,12 @@
 # Security Check — Final Secret and Leak Scan
 
-TASK-015 §9. Run on the final tree at this commit, after the last documentation edit, with the
-working container up. The re-run commands are in *How to re-run this* below, with their observed
-output.
+TASK-015 §9, re-run and re-derived for TASK-015A. Run on the final tree at this commit, after the
+last documentation edit, with the working container up. The re-run commands are in *How to re-run
+this* below, with their observed output.
 
 **Scan set:** every file `git ls-files` plus `git ls-files --others --exclude-standard` reports
 (48 files, all tracked now that this pack is committed, 0 untracked), minus **this file** — 47 files,
-427,717 bytes, `.venv/` and
+437,054 bytes, `.venv/` and
 `__pycache__/` excluded. The exclusion is necessary, not cosmetic: a secret scan has to name the
 patterns it searches for, so including the report in its own denominator would make every count in
 it move each time the report is edited. The repository already handles this problem once:
@@ -14,6 +14,15 @@ it move each time the report is edited. The repository already handles this prob
 (`tests/test_ingest.py:730-737`) "so the guard does not scan its own description". This file is
 also swept by machine under the same hard patterns (step 2a below prints nothing for it), and its
 self-referential lines are listed in the second table.
+
+TASK-015A re-derived every figure on this page after its own edits landed. No file was added or
+removed, so the **48 / 47** split is what TASK-015 recorded; the byte total, the mention census and
+the high-entropy census moved because TASK-015A edited seven scanned documents — the public
+transcript went into `checklist.md`, `status.md` and `docs/evaluation/README.md`, the corrected wait
+copy is described in `claims-audit.md` and `video-shot-list.md`, and `evidence-matrix.md` and
+`submission-copy.md` carry the re-run test count — plus one line of `static/index.html` and one new
+test name. That is the behaviour the exclusion above exists to produce: the files that changed carry
+no total, so nothing outside this page went stale when they did.
 
 One consequence of that reasoning is worth stating, because it changed how this pack is written:
 **the byte total, the mention census and the high-entropy census appear only here.** Any other file in
@@ -32,18 +41,18 @@ sweep that included it.
 
 | Surface | Method | Result |
 |---|---|---|
-| Scan set: 47 files, 427,717 bytes | line-by-line sweep for the value shapes `nvapi-` + a key character, `Bearer` + a ≥12-character non-placeholder token, `SENTINEL_INGEST_TOKEN=`/`NVIDIA_API_KEY=` + a non-empty non-placeholder value, `BEGIN … PRIVATE KEY`, `AKIA[0-9A-Z]{16}`, `ghp_`/`github_pat_` + ≥8 characters | **0 secret values.** 85 lines in the scan set merely *name* one of those patterns or variables (prose tables, `os.environ.get(...)`, assertions); **6** of them carry text in the value position, listed one by one below, all benign. PEM blocks 0, `AKIA…` 0, `ghp_…`/`github_pat_…` 0 |
-| High-entropy sweep, same 47 files | every run of ≥32 unbroken `[-\w]` characters — word characters **and** hyphens, so that separator rules are surfaced and classified rather than silently omitted — then classified | **0 credentials.** 178 runs, fully accounted for: 128 are `test_*` identifiers, 33 are Markdown/ASCII separator rules, 15 are `inc_` + 32-hex incident ids (8 distinct; public by design — they are the console's `?incident=` value), 2 are hyphenated prose (`authenticated-by-different-means`, `guessed-token-should-never-be-echoed`). None is opaque-and-mixed in the way a generated secret is |
+| Scan set: 47 files, 437,054 bytes | line-by-line sweep for the value shapes `nvapi-` + a key character, `Bearer` + a ≥12-character non-placeholder token, `SENTINEL_INGEST_TOKEN=`/`NVIDIA_API_KEY=` + a non-empty non-placeholder value, `BEGIN … PRIVATE KEY`, `AKIA[0-9A-Z]{16}`, `ghp_`/`github_pat_` + ≥8 characters | **0 secret values.** 86 lines in the scan set merely *name* one of those patterns or variables (prose tables, `os.environ.get(...)`, assertions); **6** of them carry text in the value position, listed one by one below, all benign. PEM blocks 0, `AKIA…` 0, `ghp_…`/`github_pat_…` 0 |
+| High-entropy sweep, same 47 files | every run of ≥32 unbroken `[-\w]` characters — word characters **and** hyphens, so that separator rules are surfaced and classified rather than silently omitted — then classified | **0 credentials.** 193 runs, fully accounted for: 135 are `test_*` identifiers, 33 are Markdown/ASCII separator rules, 23 are `inc_` + 32-hex incident ids (9 distinct; public by design — they are the console's `?incident=` value), 2 are hyphenated prose (`authenticated-by-different-means`, `guessed-token-should-never-be-echoed`). None is opaque-and-mixed in the way a generated secret is |
 | Git history — every line ever added, swept through `git log --all -p` | same patterns against every added line in every commit | **0 secret values.** 0 added lines where `nvapi-` is followed by a key character; 6 added lines sit in a value position and all are placeholders or source code — three `SENTINEL_INGEST_TOKEN=` (`...` twice, one regex body), two `NVIDIA_API_KEY=` (one empty, one `export NVIDIA_API_KEY=nvapi-...` whose value is a literal ellipsis, later rewritten to `'paste your NVIDIA Build key here'`), and the header built at run time `f"Bearer {config.api_key}"`. Six added lines spell the `nvapi-` prefix inside test assertions and a `# never commit a real value` comment. The diff's own size is not quoted here, for the same reason the byte total appears only once: commit count, byte count and added-line count grow with every commit, while this result does not — step 2c prints them on demand. The sweep was re-run after this pack landed and after every follow-up commit since. **It returns 0.** The pack adds no new secret-shaped text — its lines *are* the documents the tree sweep above already covers file by file — and the value patterns cannot self-match, because a bracket or a space always follows the prefix in this pack. One caveat belongs to the method rather than to the result: the same sweep with a greedy `.*` between the two PEM words returns a non-zero count made up entirely of this report — the row that describes the pattern, the command lines that carry it, the commit that replaced the greedy form with the strict one — and no figure is quoted for it, because it is unstable by construction: any later commit writing those two words in either form adds to it, whereas the strict set cannot self-match, which is why the sweep above uses it. |
 | `.env` in the tree and in history | `rglob(".env*")`, `git log --all -- .env` | **absent.** Only `.env.example` exists; no commit has ever touched `.env` |
 | `.gitignore` | direct read | `.env` (line 2), `.env.*` (line 3), `!.env.example` (line 4), `.venv/` (line 17) |
 | Browser surface, live production | `GET /`, `/static/app.js`, `/static/index.html`, `/static/styles.css`, `/openapi.json`, `/health` fetched and scanned | **clean on all six**: 0 hits for `nvapi-`, bearer literal, `NVIDIA_API_KEY=`/`SENTINEL_INGEST_TOKEN=` with a value, `integrate.api.nvidia.com`, `reasoning_content`, `innerHTML` |
-| Provider payload | code read + assertions in `tests/test_console.py:77`, `:502`, `tests/test_incidents.py:57`, `tests/test_workflow.py:74` | only `tool_calls[0].function.arguments` is read; `content` and `reasoning_content` are never surfaced, so no hidden chain of thought reaches the API or the page |
+| Provider payload | code read + assertions in `tests/test_console.py::test_no_secret_material_or_hidden_reasoning_in_static_assets`, `::test_ui_does_not_fake_progress_or_read_hidden_reasoning`, `tests/test_incidents.py:57`, `tests/test_workflow.py:74` | only `tool_calls[0].function.arguments` is read; `content` and `reasoning_content` are never surfaced, so no hidden chain of thought reaches the API or the page |
 | CSP delivery | `curl -D` on production | `content-security-policy: default-src 'self'; … frame-ancestors 'none'` on `GET /` only; `/static/app.js` correctly carries no CSP (it is not a document) |
 
 ## The matches, stated rather than hidden
 
-A scan that reports "nothing found" is not evidence. 85 lines in the scan set name one of these
+A scan that reports "nothing found" is not evidence. 86 lines in the scan set name one of these
 patterns or variables; the overwhelming majority are prose (`| NVIDIA_API_KEY | *(none)* | … |`), an
 `os.environ.get("…")` call, or a test assertion. What a reviewer needs is the subset that puts
 *something in the value position*, because that is the only shape that could leak a credential.
@@ -66,12 +75,16 @@ this paragraph. Their line numbers are deliberately not quoted — editing this 
 ones below it, which is the same self-reference in a smaller frame; `grep -n` over this file
 re-derives any of them at any moment.
 
-A plain `grep -n` for a non-space character after an equals sign finds **eight** more lines elsewhere
-in the tree: four command substitutions that mint a fresh token at run time, two shell-indirection
-lines that pass the operator's own environment through, one quoted instruction the operator then
-overwrites, and one assertion string naming the guard's own pattern. All eight are rows of the mention
-table below, each with its reason there — a generator, a name, or an instruction is not a stored
-credential.
+Step 2d runs that census over the scan set and prints **eleven** lines, because it keys on the
+assignment shape alone: three of them are already rows of the table above
+(`docs/deployment/coolify.md:201`, `scripts/send_demo_event.py:10`, `tests/test_ingest.py:780`), and
+the remaining **eight** sit elsewhere in the tree — four command substitutions that mint a fresh
+token at run time, two shell-indirection lines that pass the operator's own environment through, one
+quoted instruction the operator then overwrites, and one assertion string naming the guard's own
+pattern. All eight are rows of the mention table below, each with its reason there — a generator, a
+name, or an instruction is not a stored credential. The two `Bearer`-shaped rows of the first table
+and the empty `.env.example` key are not in those eleven, because step 2d looks only at what follows
+an equals sign.
 That is the whole reason the report sits outside its own denominator rather than inside it: the
 sentence describing the count is itself one of the lines being counted, so any number typed into it
 is wrong the instant it is typed.
@@ -84,7 +97,7 @@ The rest are name mentions, and the ones worth naming explicitly:
 | `README.md:114`, `:291`, `scripts/README.md:11`, `docs/architecture/machine-event-ingestion.md:232` | `export SENTINEL_INGEST_TOKEN=$(openssl rand -hex 32)` | generates a fresh value at run time; nothing is stored |
 | `README.md:132`, `:134` | `-e NVIDIA_API_KEY="$NVIDIA_API_KEY"` | shell indirection of the operator's own environment |
 | `sentinel/nvidia.py:95`, `:99` | `os.environ.get("NVIDIA_API_KEY", "")` | reading the variable name, default empty string |
-| `tests/test_console.py:73`, `tests/test_ingest.py:790` | `"nvapi-"` | assertion strings in the in-repo guard |
+| `tests/test_console.py` `FORBIDDEN_IN_STATIC`, `tests/test_ingest.py:790` | `"nvapi-"` | assertion strings in the in-repo guard |
 | `tests/test_ingest.py:779`, `:780` | `SENTINEL_INGEST_TOKEN=` | the guard itself: asserts the literal appears **and** that no non-space character follows `=` |
 | `docs/architecture/operational-console.md:138` | `` `nvapi-` `` | sentence describing what the asset scan checks for. This file is deliberately **not** in `DOC_PATHS` (`tests/test_ingest.py:730-737`) so the guard does not scan its own description |
 
@@ -97,7 +110,7 @@ credential-shaped string ever lands in a shipped file. Its scope is `DOC_PATHS`
 `docs/evaluation/README.md`, `.env.example`) plus `Dockerfile`, `static/app.js` and
 `static/index.html`, and it asserts three things per file: no `nvapi-` substring, no
 `TOKEN_ASSIGNMENT` match, no `BEARER_LITERAL` match (`tests/test_ingest.py:783-792`). It is part of
-the 211 passing tests, so those checks run on every suite invocation rather than once.
+the 212 passing tests, so those checks run on every suite invocation rather than once.
 
 **`docs/submission/*.md` is not in that list, and this pack does not add it there.** Two reasons,
 both stated rather than glossed: `docs/architecture/operational-console.md` was already excluded on
@@ -133,14 +146,14 @@ scan set — the same reason `docs/architecture/operational-console.md` is outsi
 reviewer can therefore re-derive every number above rather than trust it:
 
 ```bash
-# 0. the scan set: 48 files in the tree, minus this report = 47 files, 427,717 bytes
+# 0. the scan set: 48 files in the tree, minus this report = 47 files, 437,054 bytes
 git ls-files; git ls-files --others --exclude-standard    # .venv/ and __pycache__/ excluded
 { git ls-files; git ls-files --others --exclude-standard; } \
   | grep -v '^docs/submission/security-check\.md$' | sort -u | xargs wc -c | tail -1
 
 # 1. the standing guard — the shipped-file half of this scan, wired into the suite
 .venv/bin/python -m pytest tests/test_ingest.py -k "credential or env_example or docs" -q   # 26 passed, 76 deselected
-.venv/bin/python -m pytest tests/test_console.py -k "no_secret or reasoning" -q             # 4 passed, 32 deselected
+.venv/bin/python -m pytest tests/test_console.py -k "no_secret or reasoning" -q             # 4 passed, 33 deselected
 
 # 2. hard secret formats across the scan set (expect: no output at all), then history (expect: 0)
 grep -rnE 'nvapi-[A-Za-z0-9]|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY|(ghp_|github_pat_)[A-Za-z0-9_]{8,}' \
@@ -152,12 +165,18 @@ git log --all -p | grep -cE '^\+.*(nvapi-[A-Za-z0-9]|AKIA[0-9A-Z]{16}|BEGIN [A-Z
 grep -nE 'nvapi-[A-Za-z0-9]|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY|(ghp_|github_pat_)[A-Za-z0-9_]{8,}' \
   docs/submission/security-check.md
 
-# 2b. the mention census behind the "85 lines name a pattern" figure. Each anchor is written as a
+# 2b. the mention census behind the "86 lines name a pattern" figure. Each anchor is written as a
 # bracket class so this command line cannot match itself and move the number it reports.
 { git ls-files; git ls-files --others --exclude-standard; } \
   | grep -v '^docs/submission/security-check\.md$' | sort -u \
   | xargs grep -cE '[n]vapi|NVIDIA_[A]P[I]_KEY|SENTINEL_[I]NGEST_[T]OKEN|[P]RIVATE KEY|[A]KIA|[g]hp_|github_[p]at_|[B]earer ' \
-  | awk -F: '{s+=$2} END{printf "mentions=%d\n", s}'                                 # mentions=85
+  | awk -F: '{s+=$2} END{printf "mentions=%d\n", s}'                                 # mentions=86
+
+# 2d. the value-position census behind the two tables above: every assignment that carries
+# non-space text after the equals sign, so nothing in that shape stays unlisted
+{ git ls-files; git ls-files --others --exclude-standard; } \
+  | grep -v '^docs/submission/security-check\.md$' | sort -u \
+  | xargs grep -nE '(SENTINEL_[I]NGEST_[T]OKEN|NVIDIA_[A]P[I]_KEY)=[^[:space:]]' | sort   # 11 lines, 6 files
 
 # 2c. the size of the history just swept — quoted nowhere in this pack, because it moves with every commit
 git rev-list --count --all; git log --all -p | wc -c; git log --all -p | wc -l
@@ -180,19 +199,23 @@ done
          END{printf "test_=%d separators=%d inc_=%d prose=%d total=%d\n", a,b,c,NR-a-b-c, NR}'
 ```
 
-Observed, in this order: step 0 lists the 48 filenames and then `427717 total` (the comma in
-"427,717" is this document's, not `wc`'s); step 1 prints `26 passed` then `4 passed`; step 2 prints
+Observed, in this order: step 0 lists the 48 filenames and then `437054 total` (the comma in
+"437,054" is this document's, not `wc`'s); step 1 prints `26 passed` then `4 passed`; step 2 prints
 **nothing** (grep exit `1`, i.e. no match anywhere in the scan set) and then `0` for history; step 2a
 prints **nothing** either, exit `1`, which is the paragraph above being true; step 2b prints
-`mentions=85`; step 2c prints the history's size, which is the reason no figure of that kind is quoted
-for it anywhere in this pack; step 3 prints `./.env.example` and nothing from `git log`; step 4 prints `0`
-for all six paths; step 5 prints `test_=128 separators=33 inc_=15 prose=2 total=178` with nothing
+`mentions=86`; step 2d prints **11 lines across 6 files**, and those eleven are exactly the
+value-position and assignment rows of the two tables above — `README.md:112`, `:114`, `:132`, `:134`,
+`:291`, `docs/architecture/machine-event-ingestion.md:232`, `docs/deployment/coolify.md:201`,
+`scripts/README.md:11`, `scripts/send_demo_event.py:10`, `tests/test_ingest.py:779`, `:780`; step 2c
+prints the history's size, which is the reason no figure of that kind is quoted for it anywhere in
+this pack; step 3 prints `./.env.example` and nothing from `git log`; step 4 prints `0`
+for all six paths; step 5 prints `test_=135 separators=33 inc_=23 prose=2 total=193` with nothing
 unmatched but the two hyphenated prose runs named in that row.
 
 The three regexes not typed above — the two `…_TOKEN=` / `…_API_KEY=` assignment shapes and the
 `Bearer ` + 12-character literal — are deliberately left to the suite, because it already encodes
 them as `TOKEN_ASSIGNMENT` and `BEARER_LITERAL` (`tests/test_ingest.py:783-784`) and enforces them
-on every shipped file. Both step-1 selections are subsets of the 211-test run in §11, so that half
+on every shipped file. Both step-1 selections are subsets of the 212-test run in §11, so that half
 of the scan re-runs itself on every `pytest` rather than living in this document as a one-off.
 
 ## Verdict

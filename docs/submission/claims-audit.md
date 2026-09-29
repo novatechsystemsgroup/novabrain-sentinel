@@ -22,8 +22,9 @@ verdict lines, so it matches its own sweep. The counts below are **hits outside 
 Results on the final tree, clean ones recorded rather than omitted: `real-time` **0**, `in real
 time` **0**, `sanitiz*` **0**, `open-source` **0**, `state-of-the-art` **0**, `zero-trust` **0**,
 `enterprise-grade` **0**, `never fails` **0**, `all … inputs` **0**, `continuously` **0** (its only
-two other appearances are `checklist.md:164` restating the rule and `requirements.md:20` quoting
-the organiser's brief). `guarantee` has **4** hits and all four are negative or scoped — "nothing
+two other appearances are `checklist.md` §8 (the README line restating the rule) and
+`requirements.md:20` quoting the organiser's brief). `guarantee` has **4** hits and all four are
+negative or scoped — "nothing
 guarantees that gap" (`approval-workflow.md:146`), "the guarantee is 'no duplicate inference within
 a running process'" (`machine-event-ingestion.md:117`), "One field, one guarantee" (`0003:79`), "the
 ordering guarantee in …" (`coolify.md:54`, describing a documented limit). `secure` has **1** hit and
@@ -58,7 +59,7 @@ section and the console footer. Any sentence that contradicts it is a defect.
 | Claim | Where | Why it holds |
 |---|---|---|
 | Real NVIDIA inference, model named | `README.md:368-370`, `index.html:179`, `nvidia.py:18/97` | A live provider call is made with `NVIDIA_MODEL`; the slice has no fallback model and no default (`nvidia.py:97`) |
-| Only validated tool arguments are parsed | `video-script.md` block 4, `nvidia.py:4` | Reader touches `tool_calls[0].function.arguments` and never `content`/`reasoning_content`; enforced by `tests/test_console.py:502` |
+| Only validated tool arguments are parsed | `video-script.md` block 4, `nvidia.py:4` | Reader touches `tool_calls[0].function.arguments` and never `content`/`reasoning_content`; enforced by `tests/test_console.py::test_ui_does_not_fake_progress_or_read_hidden_reasoning` |
 | Machine event ingestion with bearer guard | `README.md:290-294`, `ingestion.py:47-73` | `hmac.compare_digest`, guard runs before body parse, `401` + `www-authenticate: Bearer`, `503 ingest_not_configured` when unset |
 | Real, deterministic policy; the model cannot remove the gate | `README.md:445-446` | `apply_approval_policy` (`analysis.py:12-18`) sets `requires_approval` from the severity floor after the model answers |
 | Real approval state machine and refusal path | `workflow.py`, `execution_block_reason` (`workflow.py:70-83`) | Pre-approval execute returns `409 approval_required` and appends `execution_blocked` |
@@ -102,30 +103,30 @@ remediation", "NovaOps is integrated in production". The console's own disclosur
 (`index.html:179`) and footer Real/Simulated lists (`index.html:183-198`) are the in-product
 version of this standard, which is why the audit treats them as evidence rather than copy.
 
-## Fixes still owed by this task
+## Checked and left unchanged
 
 - `README.md` and `docs/architecture/machine-event-ingestion.md` both say the bearer guard covers
   ingestion; both already state the console and `analyze` are unauthenticated. Verified consistent,
   no change needed.
-- `docs/evaluation/README.md:345-370` quotes production timings; re-checked against the runs in
-  §10 and left as measured.
+- The production timings quoted in `docs/evaluation/README.md` *Submission QA* re-checked against the
+  runs in §10 and left as measured.
 
-## Found, deliberately not edited: one stale number in shipped UI copy
+## Found and fixed: the stale wait estimate in shipped UI copy
 
-The audit's rule is that any sentence contradicting the measured loop is a defect. This one does,
-and it is the only remaining instance.
+The audit's rule is that any sentence contradicting the measured loop is a defect. This one did,
+and it was the only remaining instance.
 
 | | |
 |---|---|
-| **Defect** | `static/index.html:124` promises "a real NVIDIA model call takes about 15&ndash;50 seconds." Six live runs measured **6.7–47.1 s** (`docs/evaluation/README.md`). Both bounds are wrong: the lower bound was never reached (a run came in at 6.7 s), and the upper bound was never reached either. |
-| **Consistency** | Every other document carries the corrected band — `README.md:387`, `README.md:415`, `README.md:512`, `docs/deployment/coolify.md:107` and `:215`, `docs/architecture/incident-analysis.md:100`, `docs/submission/submission-copy.md:140`, `evidence-matrix.md:43`. The UI string is the last hold-out, so a judge who compares the console's own wording with the README finds a disagreement inside the submission. |
+| **Defect** | `static/index.html:124` promised "a real NVIDIA model call takes about 15–50 seconds." Six live runs measured **6.7–47.1 s** (`docs/evaluation/README.md`). Both bounds were wrong: the lower bound was never reached (a run came in at 6.7 s), and the upper bound was never reached either. |
+| **Consistency** | Every other document carried the corrected band — `README.md:387`, `README.md:415`, `README.md:512`, `docs/deployment/coolify.md:107` and `:215`, `docs/architecture/incident-analysis.md:100`, `docs/submission/submission-copy.md:140`, and the *Inference latency is survivable* row of `evidence-matrix.md`. The UI string was the last hold-out, so a judge who compared the console's own wording with the README found a disagreement inside the submission. After the fix the two disagree in the safe direction: prose still quotes the measured 6.7–47.1 s, the screen quotes only the enforced budget, and neither promises a bound the next run can break. |
 | **Submission impact** | Moderate and self-inflicted: the whole entry is built on "we say what we measured." A number on screen that we did not measure is exactly the kind of claim §8 exists to catch, and it is visible in shot S01. |
-| **Minimal fix** | One line, `static/index.html:124`, `15&ndash;50` → `7&ndash;47`. No test pins this string (grepped `tests/` for `a-empty`, `No assessment yet`, `15`): the console tests assert structure and the disclosure labels, not the empty-state copy, so no re-pinning is needed. |
-| **Regression risk** | Text only, one paragraph node, no selector, id or length dependency. The risk is not in the edit — it is in shipping it: `static/` is baked into the image, so the change is invisible at `https://sentinel.novatechsystem.co.uk` until the service is redeployed. Production currently serves the unedited line: `static/index.html` hashes the same served as committed. |
-| **Why it was left** | §16 restricts this task to docs, evidence and QA, and requires that a code change be described rather than made. §17 additionally gates any deploy on explicit approval, and this pass performed none — the entry's header strings were already corrected by the deploy that landed before this audit was written. |
+| **Fix applied** | TASK-015A rewrote the one line to **"A real NVIDIA model call can take tens of seconds — allow up to 90s."** This differs from the fix this audit originally proposed (`15&ndash;50` → `7&ndash;47`), and deliberately so: re-pinning a measured band only resets the clock on the same defect, because the next slow run makes the sentence false again. A budget the code actually enforces cannot drift out of date, and `static/app.js` already phrased the wait that way (`:281` "allow up to 90s", `:98` "Inference is given 90 seconds"), so the console's two surfaces now say the same thing. `int(READ_TIMEOUT)` is the source of the number (`sentinel/nvidia.py:25`); **no timeout was changed.** |
+| **Now pinned** | `tests/test_console.py::test_inference_wait_copy_promises_the_backend_read_budget` reads the placeholder out of `static/index.html`, asserts it quotes `int(READ_TIMEOUT)` and rejects any `N–M seconds` range. It failed against the old copy and passes against the new one, which is what the original "no test pins this string" gap needed closing. |
+| **Shipping status** | Text only, one paragraph node, no selector, id or length dependency — the edit carries no regression risk. The risk was always in shipping it: `static/` is baked into the image, so production still serves the old sentence until a Coolify redeploy runs. **That redeploy is required and was not performed** (TASK-015A §3 forbids an automatic deploy); tracked in [`checklist.md`](checklist.md) *Redeploy required*. |
 
-Decision requested: approve the one-line edit, then ship it in a deploy. It needs **its own commit
-plus its own deploy**, because the deploy that corrected `static/index.html:13` and `:15` landed
-without it. Until then this is a **known, documented, unfixed** wording defect — tracked as a MANUAL
-line in [`checklist.md`](checklist.md) §3, not hidden in the README's own numbers.
+The earlier revision of this section recorded it as *deliberately not edited*, because TASK-015 §16
+gated a code change on a decision this pass could not make for itself. That decision was made, the
+edit was a one-line copy change plus its test, and the defect is closed in code while still open in
+production — which is why the deploy, not the diff, is what the checklist now carries.
 

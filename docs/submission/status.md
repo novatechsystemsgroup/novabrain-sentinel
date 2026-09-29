@@ -1,6 +1,7 @@
 # Project Status — NovaBrain Sentinel
 
-Last updated **2026-09-29**, during TASK-015 (submission readiness). This file is the roadmap in
+Last updated **2026-09-29**, during TASK-015 (submission readiness) and TASK-015A (final pre-video
+corrections). This file is the roadmap in
 one page: what is finished and evidenced, what is deliberately not built, and what is left before
 the entry can be submitted. Deep detail lives in the documents linked from each line.
 
@@ -12,7 +13,7 @@ Sentinel is a **feature-complete hackathon entry** running as one container at
 event, assesses it with a real NVIDIA Nemotron call through a forced tool call, gates
 `high`/`critical` incidents behind human approval in code, runs a **simulated** remediation after
 that approval, verifies the simulated outcome, and appends every step to an audit trail — including
-the attempts it refused. 211 tests, no build step, three environment variables.
+the attempts it refused. 212 tests, no build step, three environment variables.
 
 It is not a production SRE platform and does not claim to be one.
 
@@ -28,7 +29,10 @@ It is not a production SRE platform and does not claim to be one.
 | TASK-014 | Machine event ingestion: `POST /api/v1/events/ingest`, bearer guard before body parsing, in-process idempotency ledger, `event_ingested` audit event, `/?incident=<id>` console bridge, demo emitter script | **DONE** | `sentinel/ingestion.py`, `scripts/send_demo_event.py`; `docs/architecture/machine-event-ingestion.md`, ADR-0003 |
 | TASK-015 | Submission readiness: requirements verification, evidence matrix, honest architecture, canonical demo scenario, video script + shot list, claims audit, secret scan, submission copy, checklist, this status file | **DONE** (code frozen; nothing added) | all twelve files in `docs/submission/` |
 | — | Coolify deployment to the public URL | **DONE** | `docs/deployment/coolify.md`; live `/health` + browser QA |
-| — | Production serving the corrected header strings and the TASK-014 route | **DONE** | measured 2026-09-29: live `GET /` renders the London eyebrow and `Event-driven operational agent` with 0 hits for either retired string, the three `static/` files hash identically served and committed, and `POST /api/v1/events/ingest` answers `401`. No deploy was triggered by this task — the service was already current. |
+| — | Production serving the corrected header strings and the TASK-014 route | **DONE, one copy line behind the tree** | measured 2026-09-29 against `4cc545a`: live `GET /` renders the London eyebrow and `Event-driven operational agent` with 0 hits for either retired string, the three `static/` files hashed identically served and committed, and `POST /api/v1/events/ingest` answers `401`. TASK-015A then changed `static/index.html`, so the deployed page now differs from the tree by that one sentence — see the redeploy row below. No deploy was triggered by TASK-015. |
+| TASK-014 | Machine ingestion proven **on the public URL**: `201` → `/?incident=<id>` → replay `200 duplicate:true` | **DONE** | run made 2026-09-29 with the deployed `SENTINEL_INGEST_TOKEN` (never read by this pack): `novaops-public-demo-001` → `inc_a670b4d08a1848e997c4ed006e2842da`, `awaiting_approval`, replay `duplicate: True` on the same incident id; audit `Operational event ingested` → `Incident analyzed` → `Human approval requested`. Transcript and the limits of what this pass could re-verify in `checklist.md` §3 |
+| TASK-015A | Final pre-video corrections: the empty-state wait copy now quotes the 90 s read budget instead of a measured 15–50 s band | **DONE** | `static/index.html:124`; pinned by `tests/test_console.py::test_inference_wait_copy_promises_the_backend_read_budget`. No timeout changed. |
+| — | Coolify redeploy so production serves the corrected copy | **REQUIRED, not performed** | `checklist.md` *Redeploy required*. Nothing else in `static/` moved, so the diff the deploy carries is one sentence. |
 | — | Record, review and publish the demo video | **NEXT** | `video-script.md`, `video-shot-list.md` |
 | — | Fill and submit the Airtable entry form | **NEXT — deadline 2026-10-02 23:59 PST** | `requirements.md` #1, #5 |
 | — | Final pre-submit smoke test on the public URL | **NEXT** | `checklist.md` §11 |

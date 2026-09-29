@@ -91,7 +91,7 @@ front of the agent — no LangGraph, no AutoGen, no queue, no database. Seven mo
 static files served by the same process, with no build step, no bundler and no CDN, which is what
 lets one CSP header on the root response lock the page to its own assets.
 
-211 pytest tests pass in under a second, covering the bearer guard, idempotency claims and releases,
+212 pytest tests pass in under a second, covering the bearer guard, idempotency claims and releases,
 the gate's refusal order, the state machine, policy, provider-error mapping and the console's
 rendered markup. A regression test asserts that no credential-shaped string reaches the shipped
 files. The image is python:3.13-slim, 246 MB, running as UID 10001 with no root. One container, one
