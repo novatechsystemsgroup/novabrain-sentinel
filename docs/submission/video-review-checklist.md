@@ -13,6 +13,7 @@ complete, upload complete, public share link live.
 | Host | YouTube |
 | Visibility | **Unlisted** — reached by link, no sign-in required to watch |
 | URL | <https://youtu.be/bQLiWO1G5Mw> |
+| Duration rule | **Up to 3 minutes, with 30–90 seconds preferred, on YouTube or Loom** — the official submission form's words, quoted in [`requirements.md`](requirements.md) #12. 2:29 is **inside** the maximum, **above** the preferred range (a preference, not a requirement), and the host is the one the form names. |
 
 Measured against the published link on 2026-09-29: YouTube's `oEmbed` endpoint answers `200` with
 that title and author `NovaTech Systems Group`, and the watch page answers `200` with no
@@ -20,13 +21,19 @@ that title and author `NovaTech Systems Group`, and the watch page answers `200`
 signed-out visitor. **Unlisted** is the uploader's setting, recorded here rather than inferred: no
 file in this repository can read it back.
 
-That runtime sits **1–2 s below** the floor of the 2:30–2:50 band `video-script.md` set as a
-self-imposed edit target (150 s against the 147.999–148.050 s the page serves, or against the 149 s
-its microformat claims). That band was ours, not the organiser's — the real cap is still `UNKNOWN`
-behind the registration form ([`requirements.md`](requirements.md) #12) — so the take stands unless
-the form turns out to ask for more, and the same 1–2 s spread applies to every "how far under the
-floor" line in this pack. If the form states a minimum, treat the shorter read (2:28) as the safe
-figure when deciding whether a re-cut is needed.
+**Measured against the organiser's rule, the runtime complies.** The submission form — opened by the
+submitter on 2026-09-29, and quoted in full at [`requirements.md`](requirements.md) #12 — asks for a
+demo video **"up to 3 minutes; 30–90 seconds preferred"**, hosted on YouTube or Loom. **2:29 is
+inside the 3-minute maximum.** It is above the preferred 30–90 second band; the form calls that a
+preference, not a requirement, so the entry needs no re-cut and none is owed — shortening it would be
+an editorial choice by the submitter, and `video-script.md` records which blocks such a cut would
+take first.
+
+Separately, the same runtime sits **1–2 s below** the floor of the 2:30–2:50 band that
+`video-script.md` set for itself *before* that rule was readable (150 s against the 147.999–148.050 s
+the page serves, or against the 149 s its microformat claims). That band is ours, not the organiser's,
+and the same 1–2 s spread applies to every "how far under the floor" line in this pack. Where a hard
+figure matters, use the shorter read — **2:28 — which is inside the maximum by the same margin**.
 
 ## How to read the boxes below
 
@@ -96,7 +103,9 @@ task", never "this check failed".
 ## FINAL
 
 - [ ] Watch full export from beginning to end (do not skip sections)
-- [ ] Verify duration is within target (2:30–2:50, or the form's cap if different)
+- [ ] Verify duration is inside the organiser's 3-minute maximum (the exported take is 2:29 by the
+      uploader's figure and 2:28 by the page's, so both readings clear it; the 2:30–2:50 band in
+      `video-script.md` was our own edit target, not the rule)
 - [ ] Verify audio sync (narration matches visuals)
 - [ ] Verify uploaded link while signed out / in incognito mode
 - [ ] **Only then mark video DONE**

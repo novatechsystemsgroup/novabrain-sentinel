@@ -1,14 +1,24 @@
 # Competition Requirements — Verified
 
-TASK-015 §1. Every line below is either quoted from the organiser's public page or marked
-`UNKNOWN`. Nothing here is inferred from how hackathons usually work.
+TASK-015 §1, with row 12 corrected by TASK-018A. Every line below is either quoted from the
+organiser's public page, quoted from the official submission form, or marked `UNKNOWN`. Nothing here
+is inferred from how hackathons usually work.
 
 **Primary source:** `https://luma.com/claw-agent-challenge-london`, retrieved 2026-09-28
-(22:38 UTC). Secondary source: none — the registration form at
+(22:38 UTC). The registration form at
 `https://airtable.com/appbWMw3ySORLZTgV/pagLOxwVLzgiOaunm/form` renders as an empty shell to an
 unauthenticated fetcher, and the organiser states the full details sit behind it: *"After
 registering, you'll get access to the full challenge details, submission requirements,
 inspiration, and resources."*
+
+**Secondary source (added by TASK-018A):** the same submission form, **opened by the submitter** on
+2026-09-29. One field was transcribed out of it — **"Demo Video URL or Project Link"** — and its
+text is quoted verbatim in row 12. That transcription is a human reading of a live form, not a
+measurement this repository made; an unauthenticated fetch of the form still returns the empty
+shell, so nothing in this tree can re-read it. **Only what was transcribed was upgraded.** Every
+other form-gated row (#10, #11, #13, #14, #15, #16) stays `UNKNOWN`: one field label is not a
+published field list, and the absence of a rule in that one field's text is not evidence that the
+organiser has no such rule elsewhere.
 
 **Status vocabulary:** `PASS` = requirement met and evidenced · `PARTIAL` = met in part, with the
 gap named · `BLOCKED` = cannot be met from this repository alone · `UNKNOWN` = the rule is not
@@ -27,7 +37,7 @@ publicly verifiable, so it is neither claimed nor invented.
 | 9 | Winners announced on or around 2026-10-06 | luma.com, quoted | PASS (informational) | Sets the expected wait after submission | None |
 | 10 | A public source repository is required (URL, visibility, licence) | **NOT FOUND** publicly; registration-gated | **UNKNOWN** | We ship one anyway: `https://github.com/novatechsystemsgroup/novabrain-sentinel`, PUBLIC, MIT (`LICENSE`), pushed to `main` | Submit the repo URL in the form; do not describe the requirement as if it were published |
 | 11 | A live, publicly reachable demo URL is required | NOT FOUND publicly | UNKNOWN | Shipped anyway: `https://sentinel.novatechsystem.co.uk`, verified in §10 QA with `GET /` 200 and `/health` `{"status":"ok","service":"novabrain-sentinel"}` | Include the URL in the form |
-| 12 | A demo video is required, of a stated maximum length, hosted at a stated place | NOT FOUND publicly | **UNKNOWN** | Not published, so no length can be quoted as a rule. `video-script.md` therefore targets **2:30–2:50 as a self-imposed edit target**, and says so. | After registering, read the real cap and re-cut only if the target was wrong. Do not present our target as the organiser's rule. |
+| 12 | A demo video **or** a project link; videos up to **3 minutes** (30–90 seconds preferred), hosted on **YouTube or Loom** | **VERIFIED** — official submission form, field "Demo Video URL or Project Link", transcribed by the submitter 2026-09-29 | **PASS** | Form text, quoted verbatim: *"Show us your long-running agent in action! Submit either a demo video (up to 3 minutes; 30–90 seconds preferred) or a link to your project where we can explore what you built. For videos, please use YouTube or Loom."* That resolves four things at once: a video **or** a project link is accepted, the hard maximum is 3 minutes, 30–90 s is stated as a **preference**, and YouTube satisfies the host request. Ours is **2:29** on YouTube at <https://youtu.be/bQLiWO1G5Mw> — **inside the 3-minute maximum**. It exceeds the preferred 30–90 second range; that is a preference, not a requirement, so the entry is compliant as it stands. | Nothing outstanding. Shortening to ≤1:30 is an editorial choice for the submitter, not a compliance fix — and `video-script.md` keeps the rule that the blocked-execution beat is never what gets cut to buy those seconds. |
 | 13 | Prescribed submission fields, character limits, or a description template | NOT FOUND publicly | UNKNOWN | `submission-copy.md` is written to word-count ranges chosen for readability, not to a published limit | Transcribe into whatever the form asks for |
 | 14 | Screenshots or architecture diagrams must be attached | NOT FOUND publicly | UNKNOWN | `architecture.md` carries one Mermaid diagram; `screenshots.md` plans 6 crops but commits no image binaries | Attach only if the form asks |
 | 15 | Mandated model, NIM container, or open-weights requirement | NOT FOUND publicly | UNKNOWN | Sentinel uses a hosted NVIDIA Build endpoint; nothing else is required of us | Record as an open question, not as a passed check |
@@ -36,8 +46,10 @@ publicly verifiable, so it is neither claimed nor invented.
 
 ## What we deliberately did not do
 
-- No requirement was invented to fill a gap. Seventeen of the lines above come from one page; the
-  rest are recorded as `UNKNOWN` with the reason.
+- No requirement was invented to fill a gap. Ten lines above come from the public page, one (row 12)
+  from the submission form once it was opened, and the remaining six have no published source at all,
+  so they are recorded as `UNKNOWN` with the reason. (#3 and #4 sit in the ten and still read
+  `UNKNOWN`: their *rule* is published, the fact about us is a human's to confirm.)
 - No architecture was changed because of an unverified rule. Requirement #2 ("long-running") is
   the only one where the honest answer is *partial*, and the response is a wording fix, not
   PostgreSQL.

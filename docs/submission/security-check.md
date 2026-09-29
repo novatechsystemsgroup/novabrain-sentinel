@@ -37,25 +37,34 @@ as plain words, the command line itself would be one of the lines counted, and t
 each time this file was edited — the exact trap an earlier revision fell into by quoting **102** for a
 sweep that included it.
 
-**Re-run at TASK-018 (2026-09-29), read-only.** Four submission files have joined the set since this
-page was written (`recording-runbook.md`, `narration-cheatsheet.md` and `video-review-checklist.md`
-in TASK-016, `JUDGE-QUICKSTART.md` in TASK-017) and ten documents were edited in TASK-018 — this
-report being the eleventh file in that commit — so the counts typed above are a **TASK-015A
-snapshot** and this paragraph is the current measurement of the same sweeps: the tree is **52 tracked
-files, 0 untracked**, the scan set is **51 files / 490,012 bytes**, step 2b prints **`mentions=94`**,
-and step 2d prints **13 lines across 7 files** — the two additions are rows of
-`docs/submission/recording-runbook.md`, both prose instructions whose value position holds an
-ellipsis or an angle-bracket placeholder rather than a credential, and whose line numbers are not
-quoted here because editing that runbook moves them. Step 5 is unchanged at
+**Re-measured at TASK-018A (2026-09-29), read-only.** Six submission documents were corrected here
+to the video rule the submission form states (`requirements.md` #12 and the files that had pointed at
+"still UNKNOWN"), and four submission files have joined the set since this page was first written
+(`recording-runbook.md`, `narration-cheatsheet.md` and `video-review-checklist.md` in TASK-016,
+`JUDGE-QUICKSTART.md` in TASK-017). Measured on the tree after those six edits: **52 tracked files,
+0 untracked** — no file added or removed — and a scan set of **51 files / 497,491 bytes**, against
+the **490,012** TASK-018 recorded, which is the seven thousand characters of corrected prose. Every
+other figure is unchanged, and why it is unchanged is the more useful half of this paragraph: step 2b
+still prints **`mentions=94`**, because the form's own words name an event, a duration and a video
+host and no credential variable or bearer literal; step 2d still prints **13 lines across 7 files**,
+two of them rows of `docs/submission/recording-runbook.md` whose value position holds an ellipsis or
+an angle-bracket placeholder rather than a token, and whose line numbers are not quoted here because
+editing that runbook moves them; step 5 still prints
 `test_=135 separators=33 inc_=23 prose=2 total=193`. What did not move is every conclusion: the
 hard-format sweep prints **nothing** (grep exit `1`) over the scan set, `git log --all -p` still
 matches **0** added lines, no `.env` exists in the tree or in any commit, and the shipped-file guard
-(`tests/test_ingest.py::test_no_credential_shaped_text_in_shipped_files`) passes inside the suite. A
+(`tests/test_ingest.py::test_no_credential_shaped_text_in_shipped_files`) passes inside the 212-test
+suite. The browser surface was re-fetched too and still prints `0` on all six paths, which is the
+result a documentation-only commit should produce: nothing here is deployed, so the served page is
+the one the snapshot row measured. A
 judge re-deriving a figure from the tables or the command block should expect this paragraph's
 numbers, not the snapshot's — the tables and the *Observed* line below them are records of the tree
-as TASK-015A left it, and this paragraph is what the same commands print on this one. That the
-paragraph itself moved when the duration edits landed is the point of the exclusion above: no
-scanned file carries a scan-set total, so editing ten of them updates this page alone.
+as TASK-015A left it, and this paragraph is what the same commands print on this one. That covers the
+`File:line` cells too: later commits added lines above the sentences those rows quote, so a re-run of
+step 2d on this tree names the same texts at higher numbers. `grep -n` over the file in question
+re-derives any of them; no row's classification turns on its position. That the paragraph itself
+moved again is the point of the exclusion above: no scanned file carries a scan-set total, so editing
+six of them updates this page alone.
 
 ## What was scanned
 

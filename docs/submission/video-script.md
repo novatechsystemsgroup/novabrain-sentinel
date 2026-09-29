@@ -1,25 +1,34 @@
-# Video Script — 2:30–2:50
+# Video Script — recorded at 2:29 against a verified 3-minute cap
 
 TASK-015 §5. One take, one scenario: the canonical machine-first event in
 [`demo-scenario.md`](demo-scenario.md). Narration is written to be read verbatim, except where it
 says **[read from screen]** — those numbers must come from the recording, never from this file.
 
-## Duration rule — read this before you set a hard maximum
+## Duration rule — VERIFIED from the official submission form
 
-No duration rule appears on the verified competition page
-(`https://luma.com/claw-agent-challenge-london`, fetched 2026-09-28); it is recorded as **UNKNOWN**
-in [`requirements.md`](requirements.md) row 12. So:
+The submission form, opened by the submitter on 2026-09-29, answers this directly. Its field
+**"Demo Video URL or Project Link"** reads, verbatim:
 
-- **2:30–2:50 is a self-imposed edit target, not an organiser rule.** It exists because judges
-  do not watch five minutes.
-- Do not state a hard limit on screen or in the submission form until the rule is verified.
-- If the form imposes one at submission time, re-cut to it; the block order below survives
-  shrinking by trimming blocks 2 and 9 first, never by cutting the blocked-execution beat.
-- **Recorded outcome: the exported take is 2:29**, 1–2 s under the floor of the band this file set
-  (the published page's duration fields read about 148 s, so the shorter read is 2:28; the
-  measurement is in [`video-review-checklist.md`](video-review-checklist.md)). Kept rather than
-  padded, because the band is ours and the organiser's cap is still `UNKNOWN`; the published link and
-  how it was verified are in that same file.
+> "Show us your long-running agent in action! Submit either a demo video (up to 3 minutes; 30–90
+> seconds preferred) or a link to your project where we can explore what you built. For videos,
+> please use YouTube or Loom."
+
+That is quoted in full and held as the requirement of record in
+[`requirements.md`](requirements.md) row 12. Against it:
+
+- **The exported take is 2:29, so it is inside the 3-minute maximum.** It is above the preferred
+  30–90 second band, which the form states as a preference rather than a requirement — the entry
+  complies as it stands, and cutting it shorter is an editorial choice, not a defect to fix.
+- **YouTube satisfies the host request.** The video is hosted there (link, visibility and how the
+  link was verified are in [`video-review-checklist.md`](video-review-checklist.md)).
+- **The 2:30–2:50 band below is the self-imposed edit target this file set while the organiser's rule
+  was still unread,** not an organiser rule, and it is kept only as the record of how the edit was
+  made. The take landed 1–2 s under that band's own floor: the published page's duration fields read
+  about 148 s, and only its microformat claims 149 s — that measurement lives in
+  [`video-review-checklist.md`](video-review-checklist.md) and nowhere else in this pack.
+- If the submitter later chooses to cut to ≤1:30 to sit inside the preferred range, the block order
+  below survives shrinking by trimming blocks 2 and 9 first, **never** by cutting the
+  blocked-execution beat. Nothing in the entry requires that cut.
 
 ## The editing rules that are not negotiable
 

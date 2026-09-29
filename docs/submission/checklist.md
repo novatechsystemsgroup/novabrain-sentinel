@@ -6,9 +6,10 @@ something we cannot close from here, **UNKNOWN** means the organiser has not pub
 we refuse to guess it.
 
 The Video section is checked for the three things TASK-018 was given leave to mark: recording
-complete, upload complete, a public share link that resolves. The Submission-form section is **not**
-checked, because the form has not been filled — a checkbox there would be a claim with no evidence
-behind it.
+complete, upload complete, a public share link that resolves. TASK-018A adds a fourth, §1's video
+rule, now verified from the form's own words rather than guessed at (`requirements.md` #12 quotes
+them). Opening the form is not filling it: the Submission-form section is still **not** checked,
+because nothing has been submitted — a checkbox there would be a claim with no evidence behind it.
 
 State as of 2026-09-29, written against the code tree at `34e4053`. The submission pack — 12 new
 files under `docs/submission/` plus the README and `docs/evaluation/README.md` updates — commits on
@@ -26,8 +27,9 @@ not recorded anywhere in the repository, because no webhook is configured
 ## 1. Competition requirements
 
 - [x] Requirements read from the organiser's page, not assumed — `luma.com/claw-agent-challenge-london`,
-  retrieved 2026-09-28 22:38 UTC; 17 lines recorded, each `PASS` / `PARTIAL` / `UNKNOWN` with a
-  source. → [`requirements.md`](requirements.md)
+  retrieved 2026-09-28 22:38 UTC — plus the official submission form, opened by the submitter on
+  2026-09-29 and transcribed into row 12. 17 lines recorded, each `PASS` / `PARTIAL` / `UNKNOWN` with
+  a source. → [`requirements.md`](requirements.md)
 - [x] Entry deadline recorded as binding: **2026-10-02 23:59 PST** (= 2026-10-03 06:59 UTC). The
   page also shows "14 Oct 2026 13:00 BST" for the London event; the earlier date is treated as the
   deadline and the discrepancy is documented rather than silently resolved.
@@ -37,13 +39,20 @@ not recorded anywhere in the repository, because no webhook is configured
 - [ ] **MANUAL ACTION REQUIRED** — Eligibility is a human fact the repository cannot answer: UK
   legal residency, 18+, individual (not corporate) entry, not a sponsor's employee. Confirm before
   registering; if any of these fails, nothing else in this checklist matters.
-- [ ] **UNKNOWN** — Real video length cap, prescribed form fields, screenshot/diagram requirement,
-  mandated model or NIM, team-size and originality clauses. All sit behind the registration form.
-  Read them after registering and re-cut only if our self-imposed 2:30–2:50 target was wrong. The
-  exported take is **2:29** as the uploader states it (the published page's own duration fields sit
-  around 148 s, which reads as 2:28, and only its microformat claims 149 s —
-  `video-review-checklist.md` holds the measurement), so a stated minimum at or below 2:28 costs
-  nothing and one above it costs a re-cut.
+- [x] **VERIFIED — the video rule.** TASK-018A transcribed the submission form field
+  **"Demo Video URL or Project Link"**: submit *either* a demo video **up to 3 minutes**
+  (30–90 seconds preferred) *or* a link to the project, and for videos use **YouTube or Loom**. The
+  exported take is **2:29**, so it is **inside the 3-minute maximum** and **above the preferred
+  range** — the form states that range as a preference, not a requirement, so the entry complies and
+  no re-cut is owed. The page's own duration fields sit around 148 s, which reads as 2:28, and only
+  its microformat claims 149 s (`video-review-checklist.md` holds the measurement); **both readings
+  clear the maximum**, and the 1–2 s spread only ever mattered for our own 2:30–2:50 edit band, which
+  predates the rule and is not one. Host and format are met the same way: YouTube, as named in the
+  form, with a project link still offered as the form's own alternative.
+- [ ] **UNKNOWN** — Prescribed form fields and character limits, the screenshot/diagram requirement,
+  mandated model or NIM, team-size and originality clauses. Those rows keep their status on purpose:
+  one transcribed field is not a published field list, and nothing in the text we were given speaks
+  to them.
 
 ## 2. Repository
 
@@ -263,20 +272,24 @@ not recorded anywhere in the repository, because no webhook is configured
 
 ## 9. Video
 
-- [x] Script written: 2:30–2:50 self-imposed target, 9 narration blocks, and it says **"Real NVIDIA
-  inference. Safe simulated remediation."** out loud.
+- [x] Script written: 9 narration blocks cut to a **2:30–2:50** band we set for ourselves before the
+  rule was readable, and it says **"Real NVIDIA inference. Safe simulated remediation."** out loud.
+  The organiser's rule is now verified and is **up to 3 minutes**, so that band is history, not a
+  target still outstanding.
 - [x] Shot list written: 17 shots in edit order, 11 required visible-evidence items mapped,
   legibility rule ("record wide, then punch in"), fallback per shot.
 - [x] **Record the video.** **DONE** — recorded, reviewed and exported. Duration **2:29** as stated by
-  the uploader; the published page's duration fields cluster at about 148 s, which reads as 2:28 —
-  either way the take sits 1–2 s under the floor of the 2:30–2:50 band above, and that band was our
-  editorial target, not a published rule (`requirements.md` #12 still has the real cap as `UNKNOWN`).
+  the uploader; the published page's duration fields cluster at about 148 s, which reads as 2:28.
+  Both readings are **inside the organiser's 3-minute maximum**, which is the only number in this
+  sentence that carries a rule (`requirements.md` #12 quotes the form). The 1–2 s spread matters only
+  against our own band's floor.
 - [x] **Watch it end to end** at 100 % zoom on a laptop-sized window, confirming the coverage table
   in `video-shot-list.md` line by line. **DONE — attested by the operator** during the editing pass.
   A repository cannot see a video frame, so this line is a recorded human attestation rather than a
   measurement made here, and `video-review-checklist.md` keeps its per-item boxes unticked for the
   same reason.
-- [x] **Upload / publish.** **DONE** — hosted on **YouTube**, visibility **unlisted**, title **“NovaBrain
+- [x] **Upload / publish.** **DONE** — hosted on **YouTube**, which is the host the form names
+  (YouTube or Loom), visibility **unlisted**, title **“NovaBrain
   Sentinel — NVIDIA Claw Agent Challenge: London Demo”**, at <https://youtu.be/bQLiWO1G5Mw>. The link
   resolves for a request carrying no session: `oEmbed` returns `200` with that title and author
   `NovaTech Systems Group`, and the watch page returns `200`, names `bQLiWO1G5Mw` in its player
@@ -284,7 +297,11 @@ not recorded anywhere in the repository, because no webhook is configured
   are a second short of the stated runtime (`video-review-checklist.md` holds the reading); the
   runtime this pack quotes is the uploader's **2:29**. Visibility is the uploader's setting, recorded
   as stated; nothing in this tree can read it back.
-- [ ] Re-cut **only if** the published cap turns out to differ from our target.
+- [x] **Duration compliance against the verified rule.** **DONE, no re-cut owed**: 2:29 is under the
+  form's 3-minute maximum, the host is one of the two it names, and the video is the artefact the form
+  asks for (a project link is its alternative, not a supplement). Exceeding the 30–90 second
+  *preference* is the one discretionary point, and it is the submitter's call: if a shorter cut is
+  chosen, `video-script.md` fixes the trim order and the blocked-execution beat is never what goes.
 
 ## 10. Submission form
 
@@ -293,7 +310,9 @@ not recorded anywhere in the repository, because no webhook is configured
 - [ ] Transcribe the blocks from `submission-copy.md` into whatever the form actually asks for;
   discard our field names if they differ from the published ones.
 - [ ] Paste the demo URL `https://sentinel.novatechsystem.co.uk`, the repository URL, and the video
-  link.
+  link. The video link goes in the field the form labels **"Demo Video URL or Project Link"**:
+  <https://youtu.be/bQLiWO1G5Mw>. That label is the only field name this pack has from the form, so
+  treat the others as unknown until the form is open in front of you.
 - [ ] Final pre-submit read: does any sentence promise more than `claims-audit.md` supports?
 - [ ] **Submit**, then record the timestamp. Deadline **2026-10-02 23:59 PST**.
 
@@ -341,4 +360,6 @@ production inference, so no command in this pass can create the run it asks for.
   replay `duplicate:true` on the public URL, which needed the deployed `SENTINEL_INGEST_TOKEN` this
   pack deliberately never reads (names, not values) — is closed in §3 by the token holder's run, and
   reading a production secret to tick a box is still not how it gets closed here.
-- [x] The registration-gated rules (§1) stay **UNKNOWN** until someone opens the form.
+- [x] The form-gated rules (§1) stay **UNKNOWN** unless the form's own text settles one. TASK-018A
+  took that exception exactly once, for the video rule, and upgraded nothing else: one transcribed
+  field is a source for that field, not for the list.

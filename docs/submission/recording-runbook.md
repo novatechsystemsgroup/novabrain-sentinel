@@ -56,15 +56,18 @@ References:
 
 ### Timing
 
-- Target: **2:30–2:50** (self-imposed, not the organiser's official limit — that is UNKNOWN until
-  the registration form is opened).
-- Recorded outcome: **2:29** as the uploader states it, which sits 1–2 s under the floor of our own
-  band (the published page's duration fields read about 148 s; see
-  [`video-review-checklist.md`](video-review-checklist.md) for the reading). The band was an editorial
-  target we set ourselves, so the take was kept rather than padded; re-cut only if the form turns out
-  to state a minimum.
-- If the form reveals a different limit at submission time, re-cut to it; preserve the core safety
-  sequence (blocked execution, approval, simulated action) even if the video must be shortened.
+- **Rule (VERIFIED from the official submission form, opened 2026-09-29):** a demo video **up to 3
+  minutes**, with **30–90 seconds preferred**, on **YouTube or Loom** — or a project link instead of a
+  video. Quoted verbatim in [`requirements.md`](requirements.md) #12.
+- Recorded outcome: **2:29** as the uploader states it, which is **inside the 3-minute maximum** and
+  above the preferred range — a preference, not a requirement, so the take complies as it stands. It
+  also sits 1–2 s under the floor of the **2:30–2:50** band this runbook targeted while the rule was
+  still unread (the published page's duration fields read about 148 s; see
+  [`video-review-checklist.md`](video-review-checklist.md) for the reading). That band is our own
+  editorial target, kept here only as the plan the shots were cut to.
+- No re-cut is owed to the rule. If the submitter later chooses to trim toward 30–90 s anyway,
+  preserve the core safety sequence (blocked execution, approval, simulated action) — §E names the
+  shots that go first.
 
 ## B. Terminal preparation
 
@@ -277,13 +280,18 @@ are not recorded here because a repository cannot read them off a frame.
 
 ### Duration
 
-- Target: **2:30–2:50** unless the registration form reveals a different limit.
-- The exported take is **2:29** as the uploader states it. The published page is a second shorter —
-  its duration fields read 147,999–148,050 ms and its two `lengthSeconds` values are 148 and 149 —
-  so the same cut reads as 2:28 or 2:29 depending on which one you open
+- Rule: **up to 3 minutes**, with **30–90 seconds preferred**, on **YouTube or Loom** — VERIFIED from
+  the official submission form and quoted at [`requirements.md`](requirements.md) #12. The
+  **2:30–2:50** band the shot timings above were cut against was our own editorial target, set before
+  that rule was readable.
+- The exported take is **2:29** as the uploader states it: **inside the 3-minute maximum**, above the
+  preferred band, which the form states as a preference rather than a requirement. The published page
+  is a second shorter — its duration fields read 147,999–148,050 ms and its two `lengthSeconds` values
+  are 148 and 149 — so the same cut reads as 2:28 or 2:29 depending on which one you open
   ([`video-review-checklist.md`](video-review-checklist.md) holds the measurement).
-- If shortening is needed, trim SHOT 2 (the loop strip) and SHOT 13 (the audit trail scroll)
-  first. Never cut the blocked-execution beat (SHOT 9).
+- Nothing in the verified rule requires a cut. If the submitter chooses one to reach the preferred
+  range, trim SHOT 2 (the loop strip) and SHOT 13 (the audit trail scroll) first. Never cut the
+  blocked-execution beat (SHOT 9).
 
 ## F. Final review
 
@@ -293,9 +301,10 @@ Before marking the video as done:
   **Attested by the operator** in the editing pass and recorded in [`checklist.md`](checklist.md) §9;
   no repository command can watch a video, so this line rests on the uploader's word rather than on
   a measurement made here.
-- [x] **Verify duration** is within target (2:30–2:50 or the form's cap if different). **Measured:
-  2:29** as the uploader states it — 1–2 s under the floor of a band we set ourselves, with the
-  organiser's cap still `UNKNOWN`.
+- [x] **Verify duration** is inside the organiser's maximum. **Measured: 2:29** as the uploader states
+  it — 2:28 by the published page's own fields — both readings **inside the verified 3-minute cap**.
+  It is above the 30–90 second range the form *prefers*; that is a preference, so no re-cut is
+  required, and the 1–2 s spread against our own 2:30–2:50 band no longer decides anything.
 - [ ] **Verify audio sync** — narration matches the visuals.
 - [ ] **Verify every required piece of evidence** is present. Use the coverage table in
   [`video-shot-list.md`](video-shot-list.md) line by line:
@@ -319,9 +328,10 @@ Before marking the video as done:
 - [ ] **Verify quality.** Text readable at normal laptop size, audio understandable, no long silent
   wait, no accidental notification, no mouse wandering, no terminal typo left visible, transitions
   understandable.
-- [x] **Upload / publish** at whatever host the form asks for (UNKNOWN until registered). Uploaded to
-  **YouTube** as **unlisted** at <https://youtu.be/bQLiWO1G5Mw>. If the Airtable form turns out to
-  require a different host, this link still identifies the take; re-hosting is a post-form action.
+- [x] **Upload / publish** on the host the form names: it asks for **YouTube or Loom**, and this is
+  YouTube. Uploaded as **unlisted** at <https://youtu.be/bQLiWO1G5Mw>, so the hosting rule is met as
+  written and no re-hosting is outstanding. A project link is the form's accepted alternative to a
+  video, not a replacement for this one.
 - [x] **Verify the uploaded link** while signed out / in incognito mode. Verified by the same
   session-less requests measured in §G: `oEmbed` `200` with the correct title, watch page `200` with
   no sign-in interstitial.

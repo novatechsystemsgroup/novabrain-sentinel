@@ -1,10 +1,10 @@
 # Project Status — NovaBrain Sentinel
 
-Last updated **2026-09-29**, during TASK-018 (final video URL and submission readiness). The
-redeploy it had been waiting on has since landed, so the deployment rows below are stated as
-measured rather than pending. This file is the roadmap in
-one page: what is finished and evidenced, what is deliberately not built, and what is left before
-the entry can be submitted. Deep detail lives in the documents linked from each line.
+Last updated **2026-09-29**, during TASK-018A: the submission form's video rule is recorded and the
+"still unknown" wording it superseded is gone. The redeploy earlier rows had been waiting on has
+since landed, so the deployment rows below are stated as measured rather than pending. This file is
+the roadmap in one page: what is finished and evidenced, what is deliberately not built, and what is
+left before the entry can be submitted. Deep detail lives in the documents linked from each line.
 
 ## Where the product stands
 
@@ -37,6 +37,7 @@ It is not a production SRE platform and does not claim to be one.
 | TASK-016 | Recording preparation: step-by-step runbook, narration cheat sheet, post-recording review checklist | **DONE** | `recording-runbook.md`, `narration-cheatsheet.md`, `video-review-checklist.md` |
 | TASK-017 | Judge-facing entry point: 90-second browser walkthrough, real/simulated table, machine path without a shared secret, limitations, README link, repository description | **DONE** | `JUDGE-QUICKSTART.md`, `README.md` (one line above the fold), GitHub description read back |
 | TASK-018 | Record, review and publish the demo video | **DONE** (the entry is not) | <https://youtu.be/bQLiWO1G5Mw> — "NovaBrain Sentinel — NVIDIA Claw Agent Challenge: London Demo", 2:29, YouTube, unlisted. `oEmbed` returns that title with author `NovaTech Systems Group` and the watch page serves `200` with this video id and 0 hits for the sign-in interstitial; the page's own duration fields straddle 2:28 and 2:29, so 2:29 is the uploader's figure and `video-review-checklist.md` carries the measurement. The end-to-end watch is the operator's attestation, not a repository measurement. `checklist.md` §9 holds the detail. |
+| TASK-018A | Record the video rule from the official submission form and retire the "still unknown" wording it left behind | **DONE** (the entry is not) | Form field **"Demo Video URL or Project Link"**, transcribed by the submitter on 2026-09-29: submit *either* a demo video **up to 3 minutes** (*30–90 seconds preferred*) *or* a project link, and for videos use **YouTube or Loom**. Our take is **2:29 on YouTube** — inside the maximum, above the preference, so it complies and no re-cut is owed. `requirements.md` #12 holds the verbatim quote; `checklist.md` §1/§9/Blocked, `video-script.md`, `video-review-checklist.md` and `recording-runbook.md` were corrected to it. Documentation-only: no code, no deploy, no production inference. Every other form-gated row stays `UNKNOWN`. |
 | — | Fill and submit the Airtable entry form | **NEXT — deadline 2026-10-02 23:59 PST** | `requirements.md` #1, #5 |
 | — | Final pre-submit smoke test on the public URL | **NEXT** | `checklist.md` §11 |
 
@@ -61,9 +62,10 @@ hiding the stage.
 
 1. **Eligibility** — UK residency, 18+, individual entry, not a sponsor employee. A human fact
    (`requirements.md` #3, #4).
-2. **Registration-gated rules** — real video cap, form fields, screenshot requirement, mandated
-   model/NIM, originality clause. `UNKNOWN` until the form is opened; nothing was inferred from
-   "how hackathons usually work".
+2. **Form-gated rules** — prescribed fields and character limits, the screenshot requirement, the
+   mandated model or NIM, team-size and originality clauses. Still `UNKNOWN`. The form has now been
+   opened and **one** field transcribed (the video rule, #12, closed by TASK-018A), but nothing in that
+   field's text speaks to these, and nothing here was inferred from "how hackathons usually work".
 3. **`/openapi.json` omits the bearer requirement** on `/api/v1/events/ingest` (0 occurrences of
    `Bearer` in the schema). Fixing it means editing `api.py`, which needs a redeploy to verify, so
    TASK-015 §0 records it as a known limitation instead. The contract itself is documented in
