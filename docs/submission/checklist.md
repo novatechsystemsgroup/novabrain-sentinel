@@ -43,8 +43,11 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
   `novabrain-sentinel:qa-task015`), **246 MB**, `python:3.13-slim`, `USER 10001` verified inside the
   running container (`id -u` → `10001`), healthcheck `healthy`, `RestartCount: 0`. The build context
   copies only `requirements.txt`, `sentinel/` and `static/`, so this pack cannot change it.
-- [x] Relative links resolve: 25 Markdown files, 60 relative links, **0 broken**, re-run on the final
-  tree (`.venv/` excluded).
+- [x] Relative links resolve: over the 24 Markdown files `git ls-files` reports, 60 relative links,
+  **0 broken**, re-run on the final tree. The set comes from `git ls-files`, not `find`: an earlier
+  figure of 25 files here came from a `find`-based sweep, which also picked up
+  `.pytest_cache/README.md` — an ignored, generated file that is not in the repository and so is
+  not a document anyone submits.
 - [x] `git status` clean; the tree is 48 tracked files, 0 untracked (36 before this pack, which added
   the 12 documents in `docs/submission/`). Byte total lives in `security-check.md`.
 - [x] `git push origin main` done for the commit carrying this pack (`ec4cd45`), and
@@ -137,15 +140,19 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
   `git ls-files --others --exclude-standard` report (48), minus `security-check.md` itself, which has
   to be allowed to name the patterns it searches for. The byte total is recorded in that report and
   deliberately **not** here: this file is inside the set whose size it would be quoting, so it could
-  never converge against itself. Result: **0 secret values.** 83 lines merely *name* a variable or
-  pattern; exactly **6** put something in the value position, and each is listed with its reason
-  (empty placeholder, two `...` ellipses, an f-string header, a regex source, a Mermaid cell). PEM,
-  `AKIA…`, `ghp_…`/`github_pat_…` all **0**, in the tree and in history.
+  never converge against itself. Result: **0 secret values.** The mention census — the scanned lines
+  that merely *name* a variable or pattern — is counted in that report rather than here, because a
+  per-line count moves when a scanned paragraph is re-wrapped. Six lines hold a fixed string in the
+  value position and are listed one by one with their reason (empty placeholder, two `...` ellipses,
+  an f-string header, a regex source, a Mermaid cell). Eight more carry a run-time generator, a shell
+  reference, or the guard's own assertion string rather than a stored value, and each of those is
+  named by file and line as well. PEM, `AKIA…`, `ghp_…`/`github_pat_…` all **0**, in the tree and in
+  history.
 - [x] History swept with the same patterns over **all of `git log --all -p`** → **0**, re-run after
-  this pack landed and after each later docs commit. Measured at twelve commits / 574,281 diff bytes /
-  11,515 diff lines / 7,621 added content lines — those four totals grow with every commit, the `0`
-  does not, because the pack adds no *new* text to scan: the lines it appends are the documents the
-  tree sweep above already covers one by one.
+  this pack landed and after each later docs commit. The diff's own size is deliberately not quoted
+  here: commit count, diff bytes and added-line count grow with every commit, while the `0` does
+  not, because the pack adds no *new* text to scan — the lines it appends are the documents the tree
+  sweep above already covers one by one.
 - [x] High-entropy sweep on the same 47 files: **0 credential-shaped candidates** — every run of ≥32
   word characters is classified (`test_*` identifiers, Markdown separator rules, public `inc_`
   incident ids, two hyphenated prose phrases). The census with its counts lives in
