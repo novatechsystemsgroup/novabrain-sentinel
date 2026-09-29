@@ -43,11 +43,14 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
   `novabrain-sentinel:qa-task015`), **246 MB**, `python:3.13-slim`, `USER 10001` verified inside the
   running container (`id -u` → `10001`), healthcheck `healthy`, `RestartCount: 0`. The build context
   copies only `requirements.txt`, `sentinel/` and `static/`, so this pack cannot change it.
-- [x] Relative links resolve across `docs/` after this pack lands (link check re-run in §11 QA).
-- [x] `git status` clean apart from this pack before committing; 36 tracked files at scan time.
-- [ ] **MANUAL ACTION REQUIRED** — Push the commit carrying this pack, then verify
-  `git rev-parse HEAD` equals `git rev-parse origin/main`. Until the two match, the public repository
-  does not contain this pack and a judge following the URL sees only the previously pushed commit.
+- [x] Relative links resolve: 25 Markdown files, 60 relative links, **0 broken**, re-run on the final
+  tree (`.venv/` excluded).
+- [x] `git status` clean; the tree is 48 tracked files, 0 untracked (36 before this pack, which added
+  the 12 documents in `docs/submission/`). Byte total lives in `security-check.md`.
+- [x] `git push origin main` done for the commit carrying this pack (`ec4cd45`), and
+  `git rev-parse origin/main` verified equal to it — the public repository contains this pack, not
+  just the pre-QA tree. Docs corrections committed afterwards are pushed the same way; the final SHA
+  belongs to the completion report, since no file can quote the commit that creates it.
 - [ ] **MANUAL ACTION REQUIRED** — The GitHub repository **description** still reads
   "Persistent Operational AI Agent". That is the exact claim the claims audit removed from the code
   (durability is per-process memory: `workflow.py:240`, `ingestion.py:140`). Edit it in repository
@@ -134,15 +137,15 @@ record its own push, so the push is a step in §2 verified by command, not a SHA
   `git ls-files --others --exclude-standard` report (48), minus `security-check.md` itself, which has
   to be allowed to name the patterns it searches for. The byte total is recorded in that report and
   deliberately **not** here: this file is inside the set whose size it would be quoting, so it could
-  never converge against itself. Result: **0 secret values.** 102 lines merely *name* a variable or
+  never converge against itself. Result: **0 secret values.** 83 lines merely *name* a variable or
   pattern; exactly **6** put something in the value position, and each is listed with its reason
   (empty placeholder, two `...` ellipses, an f-string header, a regex source, a Mermaid cell). PEM,
   `AKIA…`, `ghp_…`/`github_pat_…` all **0**, in the tree and in history.
-- [x] History swept with the same patterns over **all of `git log --all -p`**: the 9 commits that
-  predate this pack (416,484 bytes / 9,539 diff lines / 7,532 added content lines) → **0**. That is a
-  labelled baseline rather than a permanent total, because pushing this pack adds a tenth commit —
-  and it adds no *new* text to scan, since the lines it appends are the documents the tree sweep
-  above already covers one by one. The published history therefore stays at 0 for the same reason.
+- [x] History swept with the same patterns over **all of `git log --all -p`** → **0**, re-run after
+  this pack landed and after each later docs commit. Measured at twelve commits / 574,281 diff bytes /
+  11,515 diff lines / 7,621 added content lines — those four totals grow with every commit, the `0`
+  does not, because the pack adds no *new* text to scan: the lines it appends are the documents the
+  tree sweep above already covers one by one.
 - [x] High-entropy sweep on the same 47 files: **0 credential-shaped candidates** — every run of ≥32
   word characters is classified (`test_*` identifiers, Markdown separator rules, public `inc_`
   incident ids, two hyphenated prose phrases). The census with its counts lives in

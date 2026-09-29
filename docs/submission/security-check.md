@@ -5,7 +5,8 @@ working container up. The re-run commands are in *How to re-run this* below, wit
 output.
 
 **Scan set:** every file `git ls-files` plus `git ls-files --others --exclude-standard` reports
-(48: 36 tracked, 12 untracked), minus **this file** — 47 files, 425,056 bytes, `.venv/` and
+(48 files, all tracked now that this pack is committed, 0 untracked), minus **this file** — 47 files,
+425,238 bytes, `.venv/` and
 `__pycache__/` excluded. The exclusion is necessary, not cosmetic: a secret scan has to name the
 patterns it searches for, so including the report in its own denominator would make every count in
 it move each time the report is edited. The repository already handles this problem once:
@@ -16,17 +17,22 @@ instead scanned by eye, and its self-referential lines are listed in the second 
 One consequence of that reasoning is worth stating, because it changed how this pack is written:
 **the byte total and the high-entropy census appear only here.** Any other file in the repository is
 inside the set those two numbers measure, so editing such a file to record the total it just changed
-makes the recorded figure stale the moment it is typed. [`checklist.md`](checklist.md) §7 therefore
-keeps to the counts that cannot drift — 47 files, 102 mentions, 6 value-position lines, 0 secrets —
-and points here for the rest.
+makes the recorded figure stale the moment it is typed. [`checklist.md`](checklist.md) §7 keeps to the
+counts that a documentation-only edit cannot move — 47 files, 83 mention lines, 6 value-position
+lines, 0 secrets — and points here for the rest. The mention count needs that care too: it is a
+line-sweep over the 47-file set with this report outside it, which is why the command at the end
+writes every anchor as a bracket class. Written as plain words, the command line itself would be one
+of the lines counted, and the figure would move each time this file was edited — the exact trap the
+exclusion exists to avoid, which an earlier revision of this page fell into by quoting **102** for a
+sweep that included it.
 
 ## What was scanned
 
 | Surface | Method | Result |
 |---|---|---|
-| Scan set: 47 files, 425,056 bytes | line-by-line sweep for the value shapes `nvapi-` + a key character, `Bearer` + a ≥12-character non-placeholder token, `SENTINEL_INGEST_TOKEN=`/`NVIDIA_API_KEY=` + a non-empty non-placeholder value, `BEGIN … PRIVATE KEY`, `AKIA[0-9A-Z]{16}`, `ghp_`/`github_pat_` + ≥8 characters | **0 secret values.** 102 lines in the scan set merely *name* one of those patterns or variables (prose tables, `os.environ.get(...)`, assertions); **6** of them carry text in the value position, listed one by one below, all benign. PEM blocks 0, `AKIA…` 0, `ghp_…`/`github_pat_…` 0 |
+| Scan set: 47 files, 425,238 bytes | line-by-line sweep for the value shapes `nvapi-` + a key character, `Bearer` + a ≥12-character non-placeholder token, `SENTINEL_INGEST_TOKEN=`/`NVIDIA_API_KEY=` + a non-empty non-placeholder value, `BEGIN … PRIVATE KEY`, `AKIA[0-9A-Z]{16}`, `ghp_`/`github_pat_` + ≥8 characters | **0 secret values.** 83 lines in the scan set merely *name* one of those patterns or variables (prose tables, `os.environ.get(...)`, assertions); **6** of them carry text in the value position, listed one by one below, all benign. PEM blocks 0, `AKIA…` 0, `ghp_…`/`github_pat_…` 0 |
 | High-entropy sweep, same 47 files | every run of ≥32 unbroken `[-\w]` characters — word characters **and** hyphens, so that separator rules are surfaced and classified rather than silently omitted — then classified | **0 credentials.** 178 runs, fully accounted for: 128 are `test_*` identifiers, 33 are Markdown/ASCII separator rules, 15 are `inc_` + 32-hex incident ids (8 distinct; public by design — they are the console's `?incident=` value), 2 are hyphenated prose (`authenticated-by-different-means`, `guessed-token-should-never-be-echoed`). None is opaque-and-mixed in the way a generated secret is |
-| Git history **predating this pack** (9 commits, `git log --all -p`: 416,484 bytes, 9,539 diff lines, 7,532 added content lines) | same patterns against every line ever added | **0 secret values.** 0 added lines where `nvapi-` is followed by a key character; 6 added lines sit in a value position and all are placeholders or source code — three `SENTINEL_INGEST_TOKEN=` (`...` twice, one regex body), two `NVIDIA_API_KEY=` (one empty, one `export NVIDIA_API_KEY=nvapi-...` whose value is a literal ellipsis, later rewritten to `'paste your NVIDIA Build key here'`), and the header built at run time `f"Bearer {config.api_key}"`. Six added lines spell the `nvapi-` prefix inside test assertions and a `# never commit a real value` comment. Those four totals are a labelled baseline, not a permanent one: committing this pack added a tenth commit, and the history sweep was re-run after it landed. **It returns 0.** The pack adds no new secret-shaped text — its lines *are* the documents the tree sweep above already covers file by file — and the value patterns cannot self-match, because a bracket or a space always follows the prefix in this pack. One caveat belongs to the method rather than to the result: the same sweep with a greedy `.*` between the two PEM words returns **4** over the published history, and all four are lines of this report — the table row that names the pattern, the two command lines that carry it, and the follow-up commit that replaced the greedy form with the strict one. That number is not stable by construction, since any later commit writing those two words in either form adds to it, whereas the strict set cannot self-match; which is why the sweep above uses it. |
+| Git history at this commit (12 commits, `git log --all -p`: 574,281 bytes, 11,515 diff lines, 7,621 added content lines) | same patterns against every line ever added | **0 secret values.** 0 added lines where `nvapi-` is followed by a key character; 6 added lines sit in a value position and all are placeholders or source code — three `SENTINEL_INGEST_TOKEN=` (`...` twice, one regex body), two `NVIDIA_API_KEY=` (one empty, one `export NVIDIA_API_KEY=nvapi-...` whose value is a literal ellipsis, later rewritten to `'paste your NVIDIA Build key here'`), and the header built at run time `f"Bearer {config.api_key}"`. Six added lines spell the `nvapi-` prefix inside test assertions and a `# never commit a real value` comment. Those four totals are a snapshot of the published history at the commit named in the completion report, not a permanent one: every later commit grows them, and the sweep was re-run after this pack and each follow-up landed. **It returns 0.** The pack adds no new secret-shaped text — its lines *are* the documents the tree sweep above already covers file by file — and the value patterns cannot self-match, because a bracket or a space always follows the prefix in this pack. One caveat belongs to the method rather than to the result: the same sweep with a greedy `.*` between the two PEM words returns **4** over the published history, and all four are lines of this report — the table row that names the pattern, the two command lines that carry it, and the follow-up commit that replaced the greedy form with the strict one. That number is not stable by construction, since any later commit writing those two words in either form adds to it, whereas the strict set cannot self-match; which is why the sweep above uses it. |
 | `.env` in the tree and in history | `rglob(".env*")`, `git log --all -- .env` | **absent.** Only `.env.example` exists; no commit has ever touched `.env` |
 | `.gitignore` | direct read | `.env` (line 2), `.env.*` (line 3), `!.env.example` (line 4), `.venv/` (line 17) |
 | Browser surface, live production | `GET /`, `/static/app.js`, `/static/index.html`, `/static/styles.css`, `/openapi.json`, `/health` fetched and scanned | **clean on all six**: 0 hits for `nvapi-`, bearer literal, `NVIDIA_API_KEY=`/`SENTINEL_INGEST_TOKEN=` with a value, `integrate.api.nvidia.com`, `reasoning_content`, `innerHTML` |
@@ -35,7 +41,7 @@ and points here for the rest.
 
 ## The matches, stated rather than hidden
 
-A scan that reports "nothing found" is not evidence. 102 lines in the scan set name one of these
+A scan that reports "nothing found" is not evidence. 83 lines in the scan set name one of these
 patterns or variables; the overwhelming majority are prose (`| NVIDIA_API_KEY | *(none)* | … |`), an
 `os.environ.get("…")` call, or a test assertion. What a reviewer needs is the subset that puts
 *something in the value position*, because that is the only shape that could leak a credential.
@@ -52,13 +58,17 @@ Every one of them is here — there are six:
 This file itself carries **8** further lines in that shape: three rows of the *What was scanned*
 table, four rows of the value table above, and one row of the mention table below. Their current line
 numbers are deliberately not quoted — editing this paragraph moves the ones below it, which is the
-same self-reference in a smaller frame; `grep -n` over this file re-derives them at any moment. A
-plain `grep -n` also returns rows whose value position holds a shell variable reference — the name on
-both sides of the `=`, or an empty quoted string — rather than text; those are counted in the mention
-table below, not here, because a name is not a value.
-Each quotes a pattern as text and none carries a value. The re-run commands at the end contribute
-nothing even to this count, because every pattern there is written as a regular expression whose next
+same self-reference in a smaller frame; `grep -n` over this file re-derives them at any moment. Each
+quotes a pattern as text and none carries a value. The re-run commands at the end contribute nothing
+even to this count, because every pattern there is written as a regular expression whose next
 character is a bracket or an escape, which is precisely what the value shapes require not to follow.
+
+A plain `grep -n` for a non-space character after an equals sign finds **eight** more lines elsewhere
+in the tree: four command substitutions that mint a fresh token at run time, two shell-indirection
+lines that pass the operator's own environment through, one quoted instruction the operator then
+overwrites, and one assertion string naming the guard's own pattern. All eight are rows of the mention
+table below, each with its reason there — a generator, a name, or an instruction is not a stored
+credential.
 That is the whole reason the report sits outside its own denominator rather than inside it: the
 sentence describing the count is itself one of the lines being counted, so any number typed into it
 is wrong the instant it is typed.
@@ -120,7 +130,7 @@ scan set — the same reason `docs/architecture/operational-console.md` is outsi
 reviewer can therefore re-derive every number above rather than trust it:
 
 ```bash
-# 0. the scan set: 48 files in the tree, minus this report = 47 files, 425,056 bytes
+# 0. the scan set: 48 files in the tree, minus this report = 47 files, 425,238 bytes
 git ls-files; git ls-files --others --exclude-standard    # .venv/ and __pycache__/ excluded
 { git ls-files; git ls-files --others --exclude-standard; } \
   | grep -v '^docs/submission/security-check\.md$' | sort -u | xargs wc -c | tail -1
@@ -133,6 +143,13 @@ git ls-files; git ls-files --others --exclude-standard    # .venv/ and __pycache
 grep -rnE 'nvapi-[A-Za-z0-9]|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY|(ghp_|github_pat_)[A-Za-z0-9_]{8,}' \
   --exclude-dir=.venv --exclude-dir=__pycache__ --exclude=security-check.md .
 git log --all -p | grep -cE '^\+.*(nvapi-[A-Za-z0-9]|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY)'
+
+# 2b. the mention census behind the "83 lines name a pattern" figure. Each anchor is written as a
+# bracket class so this command line cannot match itself and move the number it reports.
+{ git ls-files; git ls-files --others --exclude-standard; } \
+  | grep -v '^docs/submission/security-check\.md$' | sort -u \
+  | xargs grep -cE '[n]vapi|NVIDIA_[A]P[I]_KEY|SENTINEL_[I]NGEST_[T]OKEN|[P]RIVATE KEY|[A]KIA|[g]hp_|github_[p]at_|[B]earer ' \
+  | awk -F: '{s+=$2} END{printf "mentions=%d\n", s}'                                 # mentions=83
 
 # 3. .env must not exist in the tree or in any commit
 find . -name '.env*' -not -path './.venv/*'; git log --all --oneline -- .env
@@ -152,11 +169,12 @@ done
          END{printf "test_=%d separators=%d inc_=%d prose=%d total=%d\n", a,b,c,NR-a-b-c, NR}'
 ```
 
-Observed, in this order: step 0 lists the 48 filenames and then `425056 total` (the comma in
-"425,056" is this document's, not `wc`'s); step 1 prints `26 passed` then `4 passed`; step 2 prints
-**nothing** (grep exit `1`, i.e. no match anywhere in the scan set) and then `0` for history; step 3
-prints `./.env.example` and nothing from `git log`; step 4 prints `0` for all six paths; step 5
-prints `test_=128 separators=33 inc_=15 prose=2 total=178` with nothing unmatched.
+Observed, in this order: step 0 lists the 48 filenames and then `425238 total` (the comma in
+"425,238" is this document's, not `wc`'s); step 1 prints `26 passed` then `4 passed`; step 2 prints
+**nothing** (grep exit `1`, i.e. no match anywhere in the scan set) and then `0` for history; step 2b
+prints `mentions=83`; step 3 prints `./.env.example` and nothing from `git log`; step 4 prints `0`
+for all six paths; step 5 prints `test_=128 separators=33 inc_=15 prose=2 total=178` with nothing
+unmatched but the two hyphenated prose runs named in that row.
 
 The three regexes not typed above — the two `…_TOKEN=` / `…_API_KEY=` assignment shapes and the
 `Bearer ` + 12-character literal — are deliberately left to the suite, because it already encodes
