@@ -13,12 +13,13 @@ files under `docs/submission/` plus the README and `docs/evaluation/README.md` u
 top of it and changes no code, so every `file:line` reference below holds for both. A file cannot
 record its own push, so the push is a step in §2 verified by command, not a SHA typed into prose.
 
-**Redeploy required.** TASK-015A changed one line of `static/index.html` (the empty-state wait copy,
-§3). Production served the pre-TASK-015A page, so the deployed console now differs from this tree by
-that line, and serving the corrected copy needs a Coolify deploy. This pass did not deploy: the brief
-says not to, and the change is a copy fix, so the live page is still a working console showing one
-out-of-date sentence. Recording the video against the deployed page therefore shows the old wording
-unless the deploy happens first.
+**Production serves this tree's copy.** TASK-015A changed one line of `static/index.html` (the
+empty-state wait copy, §3) and deployed nothing — the brief forbids it. Re-measured 2026-09-29 at
+`16d20e6`: the served `GET /`, `/static/app.js` and `/static/styles.css` hash byte-for-byte the same
+as the tree (`256ef8b0…`, `5882a5f2…`, `79254759…`), so the corrected wording is live, the video can
+be recorded against the public URL, and **no redeploy is outstanding**. How the deploy happened is
+not recorded anywhere in the repository, because no webhook is configured
+(`docs/deployment/coolify.md` documents manual deploys); the served bytes are the evidence.
 
 ## 1. Competition requirements
 
@@ -65,11 +66,13 @@ unless the deploy happens first.
   `git rev-parse origin/main` verified equal to it — the public repository contains this pack, not
   just the pre-QA tree. Docs corrections committed afterwards are pushed the same way; the final SHA
   belongs to the completion report, since no file can quote the commit that creates it.
-- [ ] **MANUAL ACTION REQUIRED** — The GitHub repository **description** still reads
-  "Persistent Operational AI Agent". That is the exact claim the claims audit removed from the code
-  (durability is per-process memory: `workflow.py:240`, `ingestion.py:140`). Edit it in repository
-  settings to e.g. "Event-driven operational agent — NVIDIA Claw Agent Challenge". The audit could
-  not fix it because it lives outside the repository. → `claims-audit.md`, *REMOVE* section.
+- [x] GitHub repository **description** corrected in TASK-017 to "Event-driven operational agent —
+  NVIDIA Claw Agent Challenge: London", set through the GitHub API and read back with
+  `gh repo view novatechsystemsgroup/novabrain-sentinel -q .description`. Visibility stayed public and
+  no other setting was touched. It contradicted the claim the audit removed from the code (durability
+  is per-process memory: `workflow.py:240`, `ingestion.py:140`), which is why it had to change before
+  the video's last frame. → `claims-audit.md`, *REMOVE* section. Because the value lives outside the
+  repository, no commit can keep it correct: re-check it on recording day.
 
 ## 3. Live demo URL
 
@@ -94,9 +97,10 @@ unless the deploy happens first.
   not a deploy log. Earlier drafts of this checklist said a redeploy was still pending; that was
   overtaken by events, and the fix here was to the document, not the service. **No deploy was
   performed for this task** — nothing in it needed one.
-  **That equivalence ended with the copy fix below:** once `static/index.html` changed in the tree,
-  the served page stopped matching it, so a redeploy is required to carry the new wording. See
-  *Redeploy required* at the top of this file.
+  **The equivalence still holds after the copy fix below.** That edit changed `static/index.html` in
+  the tree, which would have made the served page stale again; re-measured 2026-09-29 at `16d20e6`,
+  the served page hashes identically to the tree once more, so the corrected wording is live and no
+  redeploy is outstanding.
 - [x] **`static/index.html:124` wait copy corrected.** It used to promise "a real NVIDIA model call
   takes about 15–50 seconds", a measured band from six runs (actual **6.7–47.1 s**) whose lower bound
   had already been undercut, so a slower run made the console's own empty state a false promise to the
@@ -110,9 +114,11 @@ unless the deploy happens first.
   [`claims-audit.md`](claims-audit.md), *Found and fixed*. Verified rendered, not just written: the
   `qa-task015a` image built from this tree serves the sentence over `GET /`, and in a browser at
   1440 × 900 it is one line of the `.placeholder` style it already used and at 390 × 844 it wraps to
-  three with `scrollWidth − clientWidth = 0` and **0** console messages. Production, re-fetched the
-  same day, still returns the old sentence (`grep -c 'takes about'` → `1`), which is the redeploy row
-  above measured rather than asserted.
+  three with `scrollWidth − clientWidth = 0` and **0** console messages. Production was re-fetched
+  later the same day and now serves the corrected sentence: on the served `GET /`,
+  `grep -c 'takes about'` → `0` and `grep -c 'allow up to 90s'` → `1`. An earlier pass in TASK-015A
+  recorded `1` for the retired string, which was true of the page at that moment; the discrepancy was
+  the deploy landing in between, and the re-measurement is what closed the redeploy row above.
 - [x] **`201` + replay `duplicate:true` proven on the public URL.** Recorded 2026-09-29 from the run
   made against `https://sentinel.novatechsystem.co.uk` with the deployed `SENTINEL_INGEST_TOKEN` —
   a credential this QA pass deliberately never read (names, not values), so the run is the token
@@ -274,10 +280,10 @@ unless the deploy happens first.
 
 ## 11. Final smoke test before recording
 
-Production served the code in this tree until TASK-015A edited `static/index.html:124`; the deploy
-that carries the new wording has not happened, so the items below split into pre-video checks that
-are already true of the live page and one that only becomes true after a redeploy. The first two and
-the last two were run 2026-09-29; the cold console run is what a recording day still owes.
+Production serves the code in this tree, including the `static/index.html:124` wording TASK-015A
+changed — the deploy that carries it has happened, measured 2026-09-29 against `16d20e6` by hashing
+the three served `static/` files against the committed ones. All items below were therefore run
+against the live page; the cold console run is what a recording day still owes.
 
 - [x] `GET /` 200, rendering `Event-driven operational agent` with the London eyebrow; **0** hits for
   either retired string.
@@ -298,10 +304,11 @@ the last two were run 2026-09-29; the cold console run is what a recording day s
 - [ ] `git rev-parse HEAD` equals `git rev-parse origin/main`, working tree clean. Verified at the
   moment of writing; re-run after the final commit, since this document cannot quote the SHA of the
   commit that carries it.
-- [ ] **New in TASK-015A:** re-fetch `GET /` after the redeploy and confirm the empty state reads
-  "allow up to 90s" with **0** hits for the retired `takes about` range. Until that lands the
-  judgement call is whether to record against the deployed page (old copy) or a locally-run container
-  from this tree (new copy).
+- [x] **New in TASK-015A, closed in TASK-017:** re-fetch `GET /` and confirm the empty state reads
+  "allow up to 90s" with **0** hits for the retired `takes about` range. Measured on the served page
+  2026-09-29: `grep -c 'allow up to 90s'` → `1`, `grep -c 'takes about'` → `0`, and the whole file
+  hashes the same as `static/index.html` in the tree. The recording-day fallback of running a
+  container locally is no longer needed, so the video is made against the public URL.
 
 ## Blocked
 

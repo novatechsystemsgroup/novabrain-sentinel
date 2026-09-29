@@ -35,8 +35,9 @@ an incident the store no longer holds is deleted and the event is reprocessed. `
 hits: three negations ("no such incident executes autonomously", `README.md:446`; "No high or
 critical incident ever executes autonomously", `approval-workflow.md:103`; a rejected alternative,
 `0002:121`) and one describing the failure mode Sentinel avoids (`submission-copy.md:25`).
-`persistent` has **5** hits and every one quotes the retired subtitle `Persistent Operational AI
-Agent` in order to record that it is being removed.
+`persistent` survives only inside quotations of the retired subtitle `Persistent Operational AI
+Agent`, kept so the removal itself is on the record; the hit count is deliberately not restated here,
+because it is a count of prose and moves whenever a document rewords one of those quotations.
 
 ## Loop wording — the standard every other sentence defers to
 
@@ -90,10 +91,13 @@ earlier wording — `machine-event-ingestion.md:204` states the endpoint is "**n
 production-grade high-throughput webhook receiver", and `README.md:335-338` repeats it — so they are
 recorded as SUPPORTED-by-negation rather than rewritten.
 
-The one place the forbidden wording still lives is **outside** the repository: the GitHub
-repository *description* reads "Persistent Operational AI Agent", which asserts both persistence
-(§ known-limitation) and a self-running agent. It is a settings field, not a file, so no commit
-can fix it — see `checklist.md`, MANUAL ACTION REQUIRED.
+The one place the forbidden wording used to live was **outside** the repository: the GitHub
+repository *description* read "Persistent Operational AI Agent", which asserted both persistence
+(§ known-limitation) and a self-running agent. It is a settings field, not a file, so no commit could
+fix it — but the authenticated GitHub API can, and TASK-017 used it: the description now reads
+"Event-driven operational agent — NVIDIA Claw Agent Challenge: London", read back after the write.
+Because the field lives outside the tree, nothing here keeps it that way, so `checklist.md` carries it
+as a recording-day re-check rather than a completed edit.
 
 ## Wording standard adopted
 
@@ -123,10 +127,11 @@ and it was the only remaining instance.
 | **Submission impact** | Moderate and self-inflicted: the whole entry is built on "we say what we measured." A number on screen that we did not measure is exactly the kind of claim §8 exists to catch, and it is visible in shot S01. |
 | **Fix applied** | TASK-015A rewrote the one line to **"A real NVIDIA model call can take tens of seconds — allow up to 90s."** This differs from the fix this audit originally proposed (`15&ndash;50` → `7&ndash;47`), and deliberately so: re-pinning a measured band only resets the clock on the same defect, because the next slow run makes the sentence false again. A budget the code actually enforces cannot drift out of date, and `static/app.js` already phrased the wait that way (`:281` "allow up to 90s", `:98` "Inference is given 90 seconds"), so the console's two surfaces now say the same thing. `int(READ_TIMEOUT)` is the source of the number (`sentinel/nvidia.py:25`); **no timeout was changed.** |
 | **Now pinned** | `tests/test_console.py::test_inference_wait_copy_promises_the_backend_read_budget` reads the placeholder out of `static/index.html`, asserts it quotes `int(READ_TIMEOUT)` and rejects any `N–M seconds` range. It failed against the old copy and passes against the new one, which is what the original "no test pins this string" gap needed closing. |
-| **Shipping status** | Text only, one paragraph node, no selector, id or length dependency — the edit carries no regression risk. The risk was always in shipping it: `static/` is baked into the image, so production still serves the old sentence until a Coolify redeploy runs. **That redeploy is required and was not performed** (TASK-015A §3 forbids an automatic deploy); tracked in [`checklist.md`](checklist.md) *Redeploy required*. |
+| **Shipping status** | Text only, one paragraph node, no selector, id or length dependency — the edit carries no regression risk. The risk was always in shipping it: `static/` is baked into the image, so the tree edit alone leaves production quoting the old sentence. Measured 2026-09-29 against `16d20e6`, the deploy has happened — the served `static/index.html` hashes the same as the committed file, `grep -c 'allow up to 90s'` → `1` and `grep -c 'takes about'` → `0` on the live page. Evidence in [`checklist.md`](checklist.md) §2 and §11. |
 
 The earlier revision of this section recorded it as *deliberately not edited*, because TASK-015 §16
 gated a code change on a decision this pass could not make for itself. That decision was made, the
-edit was a one-line copy change plus its test, and the defect is closed in code while still open in
-production — which is why the deploy, not the diff, is what the checklist now carries.
+edit was a one-line copy change plus its test, and TASK-015A closed it in code while production was
+still behind. TASK-017 re-measured the live page and found the gap gone, so the claim and the screen
+now agree in production as well as in the tree.
 

@@ -43,18 +43,16 @@ human view, and it is the reason S12 and S14b exist.
   model call takes tens of seconds (`static/index.html:124`); the eyebrow naming the competition
   (`static/index.html:13`).
 - **Narration:** block 1 (problem + pitch).
-- **Risk / fallback:** checked 2026-09-29 against `4cc545a` — production serves the corrected eyebrow
-  and subtitle, and `static/index.html` hashed the same served as committed. **That equivalence no
-  longer holds:** the submitted tree edits line 124, so the empty-state sentence in this frame is
-  only on the public URL after the redeploy. The eyebrow (`:13`) and subtitle (`:15`) are unaffected
-  by that edit and are already correct in production.
+- **Risk / fallback:** re-checked 2026-09-29 against `16d20e6` — production serves the corrected
+  eyebrow, subtitle **and** empty-state sentence: the served `static/index.html` hashes byte-for-byte
+  the same as the committed file, and `grep -c 'allow up to 90s'` on the live page returns `1` with
+  `0` for the retired range. The earlier note in this file said the equivalence no longer held after
+  the line-124 edit; that was true of the tree before the deploy, and the deploy has since landed.
+  **S01 is safe to film against the public URL**, no local container needed.
 - **Number caution:** the printed wait is now a budget, not an estimate — `static/index.html:124`
   reads "A real NVIDIA model call can take tens of seconds — allow up to 90s", which is the client
   read timeout (`sentinel/nvidia.py:25`) rather than a measured band, so it cannot go stale
-  (`claims-audit.md`, *Found and fixed*). Narrate the elapsed time you actually watch. **The served
-  page still carries the old "about 15–50 seconds" sentence** until the redeploy in
-  `checklist.md` lands: S01 is only safe to film against the public URL after that deploy, otherwise
-  film it against a locally-run container built from the submitted tree.
+  (`claims-audit.md`, *Found and fixed*). Narrate the elapsed time you actually watch.
 
 ### S02 — The disclosure badge  ·  ~0:12  ·  browser, punch-in
 - **Action:** hold on the footer badge.
@@ -208,9 +206,11 @@ human view, and it is the reason S12 and S14b exist.
 - **Visible evidence:** `github.com/novatechsystemsgroup/novabrain-sentinel` showing the README
   first screen (live-demo line and the loop table); then the card with both URLs at legible size.
 - **Narration:** block 9.
-- **Risk / fallback:** if the repository **description** still reads "Persistent Operational AI
-  Agent", it contradicts the claims audit — fix it first (manual action, tracked in
-  `checklist.md`), otherwise the last frame undercuts the whole video.
+- **Risk / fallback:** the repository **description** is corrected — read back 2026-09-29 from the
+  GitHub API as "Event-driven operational agent — NVIDIA Claw Agent Challenge: London", visibility
+  still public and untouched. Re-check it on recording day (`gh repo view
+  novatechsystemsgroup/novabrain-sentinel -q .description`); if it has reverted, fix it in repository
+  settings before filming, otherwise the last frame undercuts the whole video.
 
 ## Coverage check — every required piece of visible evidence
 

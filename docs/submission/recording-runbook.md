@@ -13,22 +13,20 @@ References:
 
 ### Prerequisites
 
-- [ ] **Redeploy decision made.** Production served the pre-TASK-015A copy ("takes about 15–50
-  seconds") as of 2026-09-29. The tree now says "allow up to 90s". You have two options:
-  - **Option 1:** Deploy first, then record against `https://sentinel.novatechsystem.co.uk`. The
-    live page then matches the tree, and S01 in the shot list is safe to film.
-  - **Option 2:** Record against the local QA container (`sentinel-qa-015a` on `127.0.0.1:18123`,
-    built from the current tree, serving the corrected copy). The video then shows a localhost URL,
-    which is honest but less impressive than the public demo.
-  - **Do not** record against the public URL if it still serves the old sentence — that would show
-    a judge a false promise in the empty state.
-- [ ] **GitHub repo description updated.** It should read "Event-driven operational agent — NVIDIA
-  Claw Agent Challenge: London" (or similar). If it still says "Persistent Operational AI Agent",
-    fix it in repository settings before recording — the last frame of the video shows the repo,
-    and a contradictory description undercuts the claims audit.
+- [x] **Recording target: the public URL.** This used to be an open decision. Production now serves
+  the corrected copy — measured 2026-09-29 against `16d20e6`, the served `static/index.html` hashes
+  byte-for-byte the same as the committed file, `grep -c 'allow up to 90s'` on the live page returns
+  `1` and `grep -c 'takes about'` returns `0` (see [`checklist.md`](checklist.md) §2 and §11 for the
+  three hashes). So film against `https://sentinel.novatechsystem.co.uk`, and shot **S01 is safe**.
+  The local QA container (`sentinel-qa-015a` on `127.0.0.1:18123`) that an earlier revision of this
+  runbook offered as the fallback is no longer needed; if you have it running, stop it and remove it
+  so there is only one page on screen.
+- [x] **GitHub repo description updated.** It reads "Event-driven operational agent — NVIDIA Claw
+  Agent Challenge: London", set and read back through the GitHub API on 2026-09-29. The last frame of
+  the video shows the repo, and this is the string the claims audit uses; re-check with
+  `gh repo view novatechsystemsgroup/novabrain-sentinel -q .description` if anything looks off.
 - [ ] **Health check passes.** `GET https://sentinel.novatechsystem.co.uk/health` → `200` with
-  `{"status":"ok","service":"novabrain-sentinel"}`. If recording against the local container, use
-  `http://127.0.0.1:18123/health` instead.
+  `{"status":"ok","service":"novabrain-sentinel"}`.
 - [ ] **Homepage copy verified.** `GET /` contains:
   - "NVIDIA Claw Agent Challenge: London" (eyebrow)
   - "Event-driven operational agent" (subtitle)
@@ -37,7 +35,8 @@ References:
   - "Approval: REAL"
   - "Action: SIMULATED"
   - "LEARN not implemented"
-  - "allow up to 90s" (the corrected wait copy, not the old "15–50 seconds")
+  - "allow up to 90s" (the corrected wait copy, not the old "15–50 seconds") — confirmed present on
+    the served page 2026-09-29; re-check on recording day in the same breath as the health check.
 - [ ] **Fresh event id chosen.** Use `novaops-video-demo-001` for the video take. Before filming,
   confirm this exact id has NOT already been used since the current production process started. If
   it has, pick a different fresh id (e.g., `novaops-video-demo-002`).

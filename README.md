@@ -14,6 +14,8 @@ an audit trail. The model supplies judgement; the safety around it is plain code
 **Model: `nvidia/nemotron-3.5-lightning-30b-a3b` on NVIDIA Build.**
 **Inference is real; remediation is simulated, and the console says so on screen.**
 
+> **Judges: start here → [90-second testing guide](docs/submission/JUDGE-QUICKSTART.md)**
+
 If you have two minutes: the loop below → [Demo](#demo) → [NVIDIA Model
 Integration](#nvidia-model-integration) → [Known limitations](#known-limitations). For a judge's
 path with evidence instead of adjectives:

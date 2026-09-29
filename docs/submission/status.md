@@ -1,7 +1,8 @@
 # Project Status — NovaBrain Sentinel
 
-Last updated **2026-09-29**, during TASK-015 (submission readiness) and TASK-015A (final pre-video
-corrections). This file is the roadmap in
+Last updated **2026-09-29**, during TASK-017 (judge quickstart and submission polish). The
+redeploy it had been waiting on has since landed, so the deployment rows below are stated as
+measured rather than pending. This file is the roadmap in
 one page: what is finished and evidenced, what is deliberately not built, and what is left before
 the entry can be submitted. Deep detail lives in the documents linked from each line.
 
@@ -27,12 +28,14 @@ It is not a production SRE platform and does not claim to be one.
 | TASK-012 | Approval workflow: state machine, deterministic policy floor, simulated action catalog, verification | **DONE** | `sentinel/workflow.py`, `simulation.py`; `docs/architecture/approval-workflow.md` |
 | TASK-013 / 013A | Operational demo console: six panels, self-labelling loop strip, disclosure badge, CSP on `GET /` | **DONE** | `static/index.html`, `app.js`, `styles.css`; `docs/architecture/operational-console.md` |
 | TASK-014 | Machine event ingestion: `POST /api/v1/events/ingest`, bearer guard before body parsing, in-process idempotency ledger, `event_ingested` audit event, `/?incident=<id>` console bridge, demo emitter script | **DONE** | `sentinel/ingestion.py`, `scripts/send_demo_event.py`; `docs/architecture/machine-event-ingestion.md`, ADR-0003 |
-| TASK-015 | Submission readiness: requirements verification, evidence matrix, honest architecture, canonical demo scenario, video script + shot list, claims audit, secret scan, submission copy, checklist, this status file | **DONE** (code frozen; nothing added) | all twelve files in `docs/submission/` |
+| TASK-015 | Submission readiness: requirements verification, evidence matrix, honest architecture, canonical demo scenario, video script + shot list, claims audit, secret scan, submission copy, checklist, this status file | **DONE** (code frozen; nothing added) | the pack under `docs/submission/` |
 | — | Coolify deployment to the public URL | **DONE** | `docs/deployment/coolify.md`; live `/health` + browser QA |
-| — | Production serving the corrected header strings and the TASK-014 route | **DONE, one copy line behind the tree** | measured 2026-09-29 against `4cc545a`: live `GET /` renders the London eyebrow and `Event-driven operational agent` with 0 hits for either retired string, the three `static/` files hashed identically served and committed, and `POST /api/v1/events/ingest` answers `401`. TASK-015A then changed `static/index.html`, so the deployed page now differs from the tree by that one sentence — see the redeploy row below. No deploy was triggered by TASK-015. |
+| — | Production serving this tree, corrected copy included | **DONE** | measured 2026-09-29 against `16d20e6`: the served `GET /`, `/static/app.js` and `/static/styles.css` each hash byte-for-byte the same as the committed files, the empty state reads "allow up to 90s" with 0 hits for the retired range, the London eyebrow and `Event-driven operational agent` render with 0 hits for either retired string, and `POST /api/v1/events/ingest` answers `401` tokenless / `405` on `GET`. Nothing in the repository records what triggered the deploy (no webhook), so the served bytes are the evidence. |
 | TASK-014 | Machine ingestion proven **on the public URL**: `201` → `/?incident=<id>` → replay `200 duplicate:true` | **DONE** | run made 2026-09-29 with the deployed `SENTINEL_INGEST_TOKEN` (never read by this pack): `novaops-public-demo-001` → `inc_a670b4d08a1848e997c4ed006e2842da`, `awaiting_approval`, replay `duplicate: True` on the same incident id; audit `Operational event ingested` → `Incident analyzed` → `Human approval requested`. Transcript and the limits of what this pass could re-verify in `checklist.md` §3 |
-| TASK-015A | Final pre-video corrections: the empty-state wait copy now quotes the 90 s read budget instead of a measured 15–50 s band | **DONE** | `static/index.html:124`; pinned by `tests/test_console.py::test_inference_wait_copy_promises_the_backend_read_budget`. No timeout changed. |
-| — | Coolify redeploy so production serves the corrected copy | **REQUIRED, not performed** | `checklist.md` *Redeploy required*. Nothing else in `static/` moved, so the diff the deploy carries is one sentence. |
+| TASK-015A | Final pre-video corrections: the empty-state wait copy now quotes the 90 s read budget instead of a measured 15–50 s band | **DONE, and live** | `static/index.html:124`; pinned by `tests/test_console.py::test_inference_wait_copy_promises_the_backend_read_budget`. No timeout changed. |
+| — | Coolify redeploy so production serves the corrected copy | **DONE** | closed in TASK-017 by measurement, not by a deploy log: the two earlier rows said a redeploy was outstanding, and it has since landed. `checklist.md` §2 and §11 carry the hashes. |
+| TASK-016 | Recording preparation: step-by-step runbook, narration cheat sheet, post-recording review checklist | **DONE** | `recording-runbook.md`, `narration-cheatsheet.md`, `video-review-checklist.md` |
+| TASK-017 | Judge-facing entry point: 90-second browser walkthrough, real/simulated table, machine path without a shared secret, limitations, README link, repository description | **DONE** | `JUDGE-QUICKSTART.md`, `README.md` (one line above the fold), GitHub description read back |
 | — | Record, review and publish the demo video | **NEXT** | `video-script.md`, `video-shot-list.md` |
 | — | Fill and submit the Airtable entry form | **NEXT — deadline 2026-10-02 23:59 PST** | `requirements.md` #1, #5 |
 | — | Final pre-submit smoke test on the public URL | **NEXT** | `checklist.md` §11 |
@@ -61,22 +64,25 @@ hiding the stage.
 2. **Registration-gated rules** — real video cap, form fields, screenshot requirement, mandated
    model/NIM, originality clause. `UNKNOWN` until the form is opened; nothing was inferred from
    "how hackathons usually work".
-3. **Repository description** — still says "Persistent Operational AI Agent" on GitHub, outside the
-   repository's reach. It contradicts `claims-audit.md` and should read
-   "Event-driven operational agent — NVIDIA Claw Agent Challenge".
-4. **`/openapi.json` omits the bearer requirement** on `/api/v1/events/ingest` (0 occurrences of
+3. **`/openapi.json` omits the bearer requirement** on `/api/v1/events/ingest` (0 occurrences of
    `Bearer` in the schema). Fixing it means editing `api.py`, which needs a redeploy to verify, so
    TASK-015 §0 records it as a known limitation instead. The contract itself is documented in
    `docs/architecture/machine-event-ingestion.md`.
-5. **The standing secret guard does not cover this pack.**
+4. **The standing secret guard does not cover this pack.**
    `tests/test_ingest.py::test_no_credential_shaped_text_in_shipped_files` sweeps `DOC_PATHS`
    (`:730-737`) plus `Dockerfile`, `static/app.js` and `static/index.html` — the parametrisation at
    `:787`, which is a named subset rather than the tree, and leaves out `static/styles.css` as well as
    `docs/submission/*.md`. Nothing fails the build if a value is pasted into a submission document later. The
-   TASK-015 scan is a one-off over all 47 files instead; see
-   [`security-check.md`](security-check.md) §In-repo guard. Adding the twelfth directory means
+   TASK-015 scan is a one-off sweep of the whole tracked tree instead; see
+   [`security-check.md`](security-check.md) §In-repo guard. Adding this directory means
    editing a test, which §16 puts behind a stop-and-ask, so it is left as the first small piece of
    post-submission work rather than done here.
+
+Closed since: the **repository description** that used to sit on this list is no longer open. TASK-017
+set it through the GitHub API to "Event-driven operational agent — NVIDIA Claw Agent Challenge:
+London" and read the value back; visibility and settings were not touched. It is a site-level field
+rather than a file, so nothing in this tree can keep it that way — re-check it before the video's last
+frame.
 
 ## If work resumes after submission
 
